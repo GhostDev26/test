@@ -7,14 +7,13 @@ var UserProfile = React.createFactory(require('./user-profile/user-profile.js'))
     Footer = React.createFactory(require('./footer/footer.js')),
     Masonry = React.createFactory(require('./masonry/masonry.js')),
     ParallaxPage = React.createFactory(require('./ParallaxPage/ParallaxPage.js')),
-    PaddedUnderline = React.createFactory(require('./PaddedUnderline/PaddedUnderline.js'));
-   
-   
-	
-var store = require('./../stores/store.js'),
-    Dispatcher = require('./../dispatcher.js'),
-    Actions = require('./../actions/actions.js'),
-    Flux = require('delorean').Flux;  
+    PaddedUnderline = React.createFactory(require('./PaddedUnderline/PaddedUnderline.js')),
+    PhotoCollections = React.createFactory(require('./PhotoCollections/PhotoCollections.js')),
+	Lightbox = React.createFactory(require('./Lightbox/Lightbox.js')),
+	Description = React.createFactory(require('./Description/Description.js')),
+    App = React.createFactory(require('./app.js'));
+
+var	Dispatcher = require('./../dispatcher.js');
 	
 var Router = window.ReactRouter,
     Route = Router.Route,
@@ -24,19 +23,6 @@ var Router = window.ReactRouter,
     NotFoundRoute = Router.NotFoundRoute, 
 	RouteHandler = Router.RouteHandler;
 	
-	
-require('./main.css');
-
-
-//better to render to a container or to document.html?	
-
-/*React.render (
-  <UserProfile></UserProfile>,
-  document.getElementById('container')
-);*/
-
-
-// Make Welcome and NotFound(404) separate components
 
 var Welcome = React.createClass({
   render: function() {
@@ -85,45 +71,6 @@ var MyMarketplace = React.createClass({
   }
 });
 
-var App = React.createClass({
-  
-  getDefaultProps: function(){
-    return {data: store.store.data }
-  },
-  
-  componentWillMount: function() {
-  
-    var url = 'photos.json';
-    Actions.fetchUserPhotos(url);
-  
-  },
-  
-  mixins: [Flux.mixins.storeListener],
-  
-  storeDidChange: function(Store){
-    //alert(JSON.stringify(store.store.data));
-	this.props.data = store.store.data;
-  },
-  
-  render: function() {
-    return (
-	  <div className='routeHandler route-header'>
-	    <Link to='welcome'><button>Welcome</button></Link>
-	    <Link to='user-profile'><button>user profile</button></Link>
-	    <Link to='topnav'><button>topnav</button></Link>
-	    <Link to='signup'><button>signup</button></Link>
-	    <Link to='browsecollections'><button>browse collections</button></Link>
-	    <Link to='footer'><button>footer</button></Link>
-	    <Link to='masonry'><button>masonry</button></Link>
-	    <Link to='parallaxpage'><button>Parallax</button></Link>
-	    <Link to='paddedunderline'><button>PaddedUnderline</button></Link>
- 	    <div className='views'>
-		  <RouteHandler {... this.props.data} />
-	    </div>
-	  </div>
-	);
-  }
-});
 
 var routes = (
   <Route handler={App} path='/'>
@@ -137,10 +84,13 @@ var routes = (
     <Route path='/masonry' name='masonry' handler={Masonry}/>
     <Route path='/parallaxpage' name='parallaxpage' handler={ParallaxPage}/>
     <Route path='/paddedunderline' name='paddedunderline' handler={PaddedUnderline}/>
+    <Route path='/photocollections' name='photocollections' handler={PhotoCollections}/>
     <Route path='/collections' name='collections' handler={Collections}/>
     <Route path='/marketplace' name='marketplace' handler={Marketplace}/>
     <Route path='/mygallery' name='mygallery' handler={MyGallery}/>
     <Route path='/mymarketplace' name='mymarketplace' handler={MyMarketplace}/>
+    <Route path='/lightbox' name='lightbox' handler={Lightbox}/>
+    <Route path='/description' name='description' handler={Description}/>
 	<NotFoundRoute handler={NotFound} ></NotFoundRoute>
 	<DefaultRoute handler={Welcome} pageTitle="Home"/>
   </Route>

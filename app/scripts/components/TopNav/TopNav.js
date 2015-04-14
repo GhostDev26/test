@@ -35,7 +35,7 @@ var TopNav = React.createClass({
 				  <div className='form-group'>
 					<div className='input-group'>
 					  <input type='text' className='search form-control' placeholder='Search' />
-					  <span className="search-gl input-group-addon glyphicon glyphicon-search"></span>
+					  <span className="btn search-gl input-group-addon glyphicon glyphicon-search"></span>
 					</div>
 				  </div>
 				 
@@ -56,7 +56,7 @@ var TopNav = React.createClass({
 				</ul>
 			  </li>
 			  <li><Link className='tabs' to='browsecollections'>Browse</Link></li>
-			  <li><Link className='tabs' to='collections'>Collections</Link></li>
+			  <li><Link className='tabs' to='photocollections'>Collections</Link></li>
 			  <li><Link className='tabs' to='marketplace'>Marketplace</Link></li>
 			  
 			</ul>

@@ -4,79 +4,271 @@
 var Dispatcher = require('./../dispatcher.js');
 
 var Actions = {
- 
+
+  channel: function (channel) {
+
+    return this.channels[channel];
+
+  },
+
+  channels: {
+
+    paddedUnderline: null
+
+  },
+
   setData: function (data) {
     Dispatcher.setData(data);
   },
-  
+
   setUserProfile: function (data) {
     //validate on the server then do this
     Dispatcher.setUserProfile(data);
   },
-  
-  fetchUserPhotos: function(url){
-  
-      $.getJSON( url,{
-	    format: 'json'
-	  }).done( function(data){  
-	  
-	    Dispatcher.fetchUserPhotos(data);
-	  
-	  }).fail( function(e){
-	    
-		alert('failed');
-	  
-	  });  
-	  
-  },
-  
-  followArtist: function(){
-  
-  },
-  
-  fileUpload: function(elem,url){
-  
-    $(elem).fileupload({
-	
-	  url: url,
-	  dataType: 'json',
-	  done: function (e, data) {
-		
-	    $.each(data.result.files, function (index, file) {
-	  
-	      Dispatcher.setCVFile(file);
-          $('<p></p>').text(file.name).appendTo('#files');
-			
-	    });
-		
-	  },
-	  fail: function(){  
-		   
-	    alert('invalid url');
-		
-	  },
-	  progressall: function (e, data) {
-		var progress = parseInt(data.loaded / data.total * 100, 10);
-		$('#progress .progress-bar').css(
-			'width',
-			progress + '%'
-		);
-	  }
-      }).prop('disabled', !$.support.fileInput)
-        .parent().addClass($.support.fileInput ? undefined : 'disabled');    
+
+  fetchUserPhotos: function (url) {
+
+    $.getJSON(url, {
+      format: 'json'
+    }).done(function (data) {
+
+      Dispatcher.fetchUserPhotos(data);
+
+    }).fail(function (e) {
+
+      alert('failed');
+
+    });
 
   },
-  
-  unbindfileUpload: function(elem){
-  
+
+  fetchFeaturedCollections: function (url) {
+
+    $.getJSON(url, {
+      format: 'json'
+    }).done(function (data) {
+
+      Dispatcher.setFeaturedCollections(data);
+
+    }).fail(function (e) {
+
+      alert('unable to load');
+
+    });
+
+  },
+
+  fetchArtLoverCollections: function (url) {
+
+    $.getJSON(url, {
+      format: 'json'
+    }).done(function (data) {
+
+      Dispatcher.setArtLoverCollections(data);
+
+    }).fail(function (e) {
+
+      alert('unable to load');
+
+    });
+
+  },
+
+  followArtist: function () {
+    console.log("Following Artist");
+  },
+
+  fileUpload: function (elem, url) {
+
+    $(elem).fileupload({
+
+      url: url,
+      dataType: 'json',
+      done: function (e, data) {
+
+        $.each(data.result.files, function (index, file) {
+
+          Dispatcher.setCVFile(file);
+          $('<p></p>').text(file.name).appendTo('#files');
+
+        });
+
+      },
+      fail: function () {
+
+        alert('invalid url');
+
+      },
+      progressall: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+        $('#progress .progress-bar').css(
+            'width',
+                progress + '%'
+        );
+      }
+    }).prop('disabled', !$.support.fileInput)
+        .parent().addClass($.support.fileInput ? undefined : 'disabled');
+
+  },
+
+  unbindfileUpload: function (elem) {
+
     elem.off('fileupload');
-   
+
   }
 
 };
 
 module.exports = Actions;
-},{"./../dispatcher.js":26}],2:[function(require,module,exports){
+},{"./../dispatcher.js":37}],2:[function(require,module,exports){
+arguments[4][1][0].apply(exports,arguments)
+},{"./../dispatcher.js":37,"dup":1}],3:[function(require,module,exports){
+'use strict';
+
+var ImageOverlay = require('./../ImageOverlay/ImageOverlay.js');
+
+require('./carousel.css');
+
+var Carousel = React.createClass({displayName: "Carousel",
+  
+  getDefaultProps: function(){
+  
+    return({
+	  featuredCollections: [{}],
+	  carousel_id: 'carousel-generic',
+	  imagesPer: 3
+	});
+  
+  },
+  
+  componentDidMount: function(){
+  
+    $('.carousel-control').css({background:'white'});
+	$('.carousel-control').find('.glyphicon').css({color:'black'});
+  
+  },
+  
+  componentDidUpdate: function(){
+  
+    //alert(JSON.stringify(this.props));
+  
+  },
+  
+  render: function(){
+    
+    var featuredCollections,
+	    carousel_id = "#" + this.props.carousel_id;
+	var self = this;
+    if(this.props.featuredCollections[0].featuredCollection.mainPhoto){
+	  
+	  var imageArr = [],
+	      increment = 1,
+		  images,
+	      classes = 'item itemholder',
+		  self = this;
+	  
+	  featuredCollections = this.props.featuredCollections.map( function(item,i) {
+	    
+		imageArr.push(  
+		  React.createElement("div", {className: "imagewrapper"}, 
+	        React.createElement(ImageOverlay, {userProfile: self.props.userProfile, photoAttributes: item.featuredCollection.mainPhoto}), 	   
+			React.createElement("img", {className: "img-responsive firstrow", src: item.featuredCollection.mainPhoto.photoUrl, alt: "photo"})
+		  )
+		);
+		
+		if((i+1) == increment*self.props.imagesPer){
+		  
+		  if(increment === 1){
+		    classes = 'item active itemholder';
+		  }
+		  else{ 
+		    classes = 'item itemholder';
+		  }
+		  
+ 		  images = imageArr.slice(i-2,i+1);
+		  increment++;
+		  
+		  return (
+		    React.createElement("div", {className: classes}, images)		  
+	      ); 
+		 
+		}
+		
+	  }); 
+    
+	}
+    else{
+	  featuredCollections = function(){ return (React.createElement("div", null, "Nothing loaded")) }
+	}
+	
+	return (
+	
+	  React.createElement("div", {id: this.props.carousel_id, className: "carousel slide custom-carousel"}, 
+            
+		/*this is blocking overlay*/	
+		/*<ol className="carousel-indicators">
+		  <li data-target={carousel_id} data-slide-to="0" className="active"></li>
+		  <li data-target={carousel_id} data-slide-to="1"></li>
+		  <li data-target={carousel_id} data-slide-to="2"></li>
+		</ol>}*/
+
+		React.createElement("div", {className: "carousel-inner"}, 
+		  featuredCollections
+		), 
+	 
+		React.createElement("a", {className: "left carousel-control", href: carousel_id, "data-slide": "prev"}, 
+		  React.createElement("span", {className: "glyphicon glyphicon-chevron-left"})
+		), 
+		React.createElement("a", {className: "right carousel-control", href: carousel_id, "data-slide": "next"}, 
+		  React.createElement("span", {className: "glyphicon glyphicon-chevron-right"})
+		)
+	 
+	  )
+	  
+	);
+  }
+});
+
+module.exports = Carousel;
+},{"./../ImageOverlay/ImageOverlay.js":9,"./carousel.css":4}],4:[function(require,module,exports){
+var css = ".custom-carousel .firstrow{\r\n  width: 100%;\r\n}\r\n\r\n.custom-carousel .imagewrapper{\r\n  overflow:hidden;\r\n  height: 175px;\r\n  width: 31.33%;\r\n  margin:1%;\r\n  margin-top:0;\r\n  margin-bottom:0;\r\n  float:left;\r\n  position:relative;\r\n}\r\n\r\n.custom-carousel .carousel-inner{\r\n  position: relative;\r\n  width: 82%;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n}\r\n\r\n.custom-carousel{\r\n  height: 175px;\r\n}\r\n\r\n.custom-carousel .carousel-control{\r\n  width:9%;\r\n}\r\n\r\n\r\n\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],5:[function(require,module,exports){
+var css = ""; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],6:[function(require,module,exports){
+'use strict';
+
+require('./Description.css');
+
+var Description = React.createClass({displayName: "Description",
+  
+  getDefaultProps: function(){
+  
+    return({
+	  title: 'Title',
+	  ownerName: 'Owner Name',
+	  photoUrl: null,
+	  //todo: add ownerAvatar to store/json
+	  ownerAvatar: null,
+	  description: "Description"
+    });
+  
+  },
+  
+  render: function(){
+    return(
+	  React.createElement("div", {className: "description"}, 
+	    
+		React.createElement("div", {className: "container"}, 
+	      React.createElement("h4", {className: "dark-gray heavy"}, this.props.title)
+		)
+	  
+	  )
+	);
+  }
+});
+
+module.exports = Description;
+},{"./Description.css":5}],7:[function(require,module,exports){
 'use strict';
 
 var Router = window.ReactRouter,
@@ -87,7 +279,7 @@ var Router = window.ReactRouter,
 	
 require('./footer.css');
 
-var Footer = React.createClass({displayName: 'Footer',
+var Footer = React.createClass({displayName: "Footer",
 
   render: function(){
     return (  
@@ -111,7 +303,9 @@ var Footer = React.createClass({displayName: 'Footer',
 			  React.createElement(Link, {className: "footerpages", to: "about"}, React.createElement("a", {href: "#about"}, "Contact"))
 			)
 		  ), 
-		  React.createElement("p", null, "Made with love on assembly")
+		  React.createElement("p", null, "Made with ", React.createElement("span", {className: "glyphicon glyphicon-heart"}), " on",  
+		    React.createElement("a", {href: "https://assembly.com"}, " Assembly")
+		  )
 		)
       
       )	  
@@ -123,9 +317,9 @@ var Footer = React.createClass({displayName: 'Footer',
 });
 
 module.exports = Footer;
-},{"./footer.css":3}],3:[function(require,module,exports){
-var css = ".af-footer{\r\n  background: black;\r\n}\r\n\r\n.af-footer .logo{\r\n  width:200px\r\n}\r\n\r\n.af-footer a,li{\r\n  color: white;\r\n}\r\n\r\n.af-footer p{\r\n  margin-left:1.5em;\r\n}\r\n\r\n.af-footer .breadcrumbs{\r\n  color:white;\r\n  width:90%;\r\n  \r\n  background: #3a3a3a;\r\n\r\n  display:block;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  text-align:justify;\r\n}\r\n\r\n.footerpages{\r\n  text-align:center;\r\n  color:white;\r\n}\r\n\r\n.footerpage{\r\n  width:380px;\r\n  padding:2px;\r\n  font-size:1.08em;\r\n  display:block;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n}\r\n\r\n@media (max-width:600px) {\r\n  .footerpage{\r\n    width:280px;\r\n  }\r\n}\r\n"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],4:[function(require,module,exports){
+},{"./footer.css":8}],8:[function(require,module,exports){
+var css = ".af-footer{\r\n  background: black;\r\n}\r\n\r\n.af-footer .logo{\r\n  width:200px\r\n}\r\n\r\n.af-footer a,li{\r\n  color: white;\r\n}\r\n\r\n.af-footer p{\r\n  margin-left:2em;\r\n  color: lavender;\r\n}\r\n\r\n.af-footer .breadcrumbs{\r\n  color:white;\r\n  width:90%;\r\n  background: #3a3a3a;\r\n  display:block;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  text-align:justify;\r\n}\r\n\r\n.footerpages{\r\n  text-align:center;\r\n  color:white;\r\n}\r\n\r\n.footerpage{\r\n  width:380px;\r\n  padding:2px;\r\n  font-size:1.08em;\r\n  display:block;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n}\r\n\r\n@media (max-width:600px) {\r\n  .footerpage{\r\n    width:280px;\r\n  }\r\n}\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],9:[function(require,module,exports){
 'use strict'
 
 var Actions = require('./../../actions/actions.js');
@@ -133,16 +327,15 @@ var Actions = require('./../../actions/actions.js');
 require('./overlay.css');
 
 
-var ImageOverlay = React.createClass({displayName: 'ImageOverlay',
+var ImageOverlay = React.createClass({displayName: "ImageOverlay",
 
   isFollowing: 'follow',
-  
   getInitialState: function(){
     
     //match artist user if following with owner/artist name in photo attributes
 	var following = this.props.userProfile.following;
 	var owner = this.props.photoAttributes.ownerName;
-	var toFollow = following == owner ? 'Unfollow' : 'Follow'
+	var toFollow = following == owner ? 'Following' : 'Follow'
 	  
 	return ({
 	  isFollowing: toFollow
@@ -156,7 +349,7 @@ var ImageOverlay = React.createClass({displayName: 'ImageOverlay',
 	var text = $(elem).find('small').text();
 	
 	if(text == 'Follow') {
-	  this.setState({isFollowing:'Unfollow'});
+	  this.setState({isFollowing:'Following'});
 	}
 	else{
 	  this.setState({isFollowing:'Follow'});
@@ -227,24 +420,62 @@ var ImageOverlay = React.createClass({displayName: 'ImageOverlay',
 });
 
 module.exports = ImageOverlay;
-},{"./../../actions/actions.js":1,"./overlay.css":5}],5:[function(require,module,exports){
-var css = ".overlay{\r\n\r\n  color:white;\r\n  position:absolute;\r\n  opacity:0;\r\n  width:100%;\r\n  height:100%;\r\n  background: rgba(20,20,20,0.0);\r\n\r\n}\r\n\r\n.overlay:hover{\r\nopacity:0.99;\r\n  background: rgba(20,20,20,0.7);\r\n  -webkit-transition: background .8s ease;\r\n          transition: background .8s ease;\r\n}\r\n\t\t  \r\n.overlay-clicked{\r\n  \r\n  opacity:0.99;\r\n  background: rgba(20,20,20,0.72);\r\n  -webkit-transition: background .8s ease;\r\n          transition: background .8s ease;\r\n\r\n}\r\n\r\n.overlayWrapper{\r\n\r\n  position:relative;\r\n  width: 100%;\r\n  height:100%;\r\n  border: solid 1px #eee;\r\n\r\n}\r\n\r\n.overlayWrapper .container{\r\n\r\n  margin:12px 18px 12px 0;\r\n  position:relative;\r\n  width: 100%;\r\n\r\n}\r\n\r\n.overlay .description{\r\n  \r\n  text-align: justify;\r\n  font-size: 0.8em;\r\n  font-style:italic;\r\n  margin-left:1.75em;\r\n  margin-right:2.5em;\r\n \r\n}\r\n\r\n.overlay .btn-group-justified{\r\n width:100%;\r\n}\r\n\r\n.overlay .btn-group-justified .btn{\r\n  color:white;\r\n  width:20%;\r\n  border: none;\r\n  margin-top:18px;\r\n  background: inherit;\r\n}\r\n\r\n.overlay .glyphicon:hover{\r\n  color: #e56e5c;\r\n}\r\n\r\n.overlay .glyphicon:active{\r\n  -webkit-transform: scale(1.3);\r\n          transform: scale(1.3);\r\n  -webkit-transition: -webkit-transform .5s liner;\r\n          transition: -webkit-transform .5s liner;\r\n}\r\n\r\n.overlay .btn small{\r\n  color: white;\r\n  font-size:9px;\r\n}\r\n\r\n\r\n.overlay  .follow{\r\n  color: white;\r\n}\r\n\r\n.overlay .Unfollow{\r\n  color: orange;\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],6:[function(require,module,exports){
-var css = ".paddedUnderline .focused{\r\n  \r\n  box-shadow: inset 0px -3px #e56e5c;\r\n  -webkit-transition: all 0.15s linear;\r\n  transition: all 0.15s linear;\r\n\r\n  \r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],7:[function(require,module,exports){
+},{"./../../actions/actions.js":2,"./overlay.css":10}],10:[function(require,module,exports){
+var css = ".overlay{\r\n\r\n  color:white;\r\n  position:absolute;\r\n  opacity:0;\r\n  width:100%;\r\n  height:100%;\r\n  background: rgba(20,20,20,0.0);\r\n\r\n}\r\n\r\n.overlay:hover{\r\n  opacity:0.99;\r\n  background: rgba(20,20,20,0.7);\r\n  -webkit-transition: background .8s ease;\r\n          transition: background .8s ease;\r\n}\r\n\t\t  \r\n.overlay-clicked{\r\n  \r\n  opacity:0.99;\r\n  background: rgba(20,20,20,0.72);\r\n  -webkit-transition: background .8s ease;\r\n          transition: background .8s ease;\r\n\r\n}\r\n\r\n.overlayWrapper{\r\n\r\n  position:relative;\r\n  width: 100%;\r\n  height:100%;\r\n  border: solid 1px #eee;\r\n\r\n}\r\n\r\n.overlayWrapper .container{\r\n\r\n  margin:-78px 20px 0 0;\r\n  position:absolute;\r\n  width: 100%;\r\n  height: 160px;\r\n  top:50%;\r\n\r\n}\r\n\r\n.overlay .description{\r\n  \r\n  text-align: justify;\r\n  font-size: 0.8em;\r\n  font-style:italic;\r\n  margin-left:1.85em;\r\n  margin-right:2.6em;\r\n  \r\n  position:relative;\r\n \r\n}\r\n\r\n.overlay .btn-group-justified{\r\n width:100%;\r\n}\r\n\r\n.overlay .btn-group-justified .btn{\r\n  color:white;\r\n  width:20%;\r\n  border: none;\r\n  margin-top:18px;\r\n  background: inherit;\r\n}\r\n\r\n.overlay .glyphicon:hover{\r\n  color: #e56e5c;\r\n}\r\n\r\n.overlay .glyphicon:active{\r\n  -webkit-transform: scale(1.3);\r\n          transform: scale(1.3);\r\n  -webkit-transition: -webkit-transform .5s liner;\r\n          transition: -webkit-transform .5s liner;\r\n}\r\n\r\n.overlay .btn small{\r\n  color: white;\r\n  font-size:9px;\r\n}\r\n\r\n\r\n.overlay  .follow{\r\n  color: white;\r\n}\r\n\r\n.overlay .Following{\r\n  color: pink;\r\n  \r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],11:[function(require,module,exports){
+var css = ".lightbox{\r\n  position:absolute;\r\n  top:1px;\r\n  left:0;\r\n  height:100vh;\r\n  width: 100%;\r\n}\r\n\r\n.lightbox .glyphicon-remove{\r\n  top:8vh;\r\n  right:25%;\r\n  position:absolute;\r\n  background: white;\r\n  padding:2px;\r\n  border-radius: 50%;\r\n  color:black;\r\n  text-align:right;\r\n  cursor:pointer;  \r\n}\r\n\r\n.lightbox .glyphicon-remove:hover{\r\n  box-shadow: 0 0 4px 1px lavender;\r\n}\r\n\r\n.lightbox .glyphicon-remove:active{\r\n  color:red;\r\n}\r\n\r\n.lightbox .jumbotron{  \r\n  margin-top:12vh;\r\n  height:76vh;\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],12:[function(require,module,exports){
 'use strict';
 
+require('./Lightbox.css');
+
+var Lightbox = React.createClass({displayName: "Lightbox",
+  
+  handleCloseClick: function(){
+  
+  },
+  
+  render: function(){
+    return(
+	  React.createElement("div", {className: "lightbox dark-gray-background"}, 
+		React.createElement("div", {className: "jumbotron center-block fifty"}, 
+	      React.createElement("span", {onClick: this.handleCloseClick, className: "glyphicon glyphicon-remove"})
+		  /*
+		  <div className='container'>
+			<h4 className='dark-gray heavy'>Bird In Space</h4>
+		  </div>*/
+		)
+	  )
+	);
+  }
+});
+
+module.exports = Lightbox;
+},{"./Lightbox.css":11}],13:[function(require,module,exports){
+var css = ".paddedUnderline .focused{\r\n  \r\n  box-shadow: inset 0px -3px #e56e5c;\r\n  -webkit-transition: all 0.15s linear;\r\n  transition: all 0.15s linear;\r\n\r\n}\r\n\r\n.paddedUnderline .regular{\r\n \r\n  font-size:1.4em;\r\n  padding: .15em .4em .15em .5em;\r\n  margin:0;\r\n \r\n}\r\n\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],14:[function(require,module,exports){
+'use strict';
+
+var Actions = require('./../../Actions/actions.js'),
+    Channel = Actions.channel('paddedUnderline');
+	
 require('./PaddedUnderline.css');
 
-var PaddedUnderline = React.createClass({displayName: 'PaddedUnderline',
+var PaddedUnderline = React.createClass({displayName: "PaddedUnderline",
 
   getDefaultProps: function() {
   
     return ({
 	
-	  template: React.createElement("span", null, "underlined"),
+	  template: React.createElement("strong", null, "underlined"),
+	  variation: 'regular',
 	  dynamic: true,
-	  isFocused: false
+	  isFocused: false,
+	  actions: [{
+	    action: function(){ return 'bug' },
+	    name: 'action'
+	  }],
+	  acceptActions: true
 	
 	});
   
@@ -253,20 +484,43 @@ var PaddedUnderline = React.createClass({displayName: 'PaddedUnderline',
   componentDidMount: function() {
   
     this.handleStyles();
-  
+	if(this.props.acceptActions){
+	  this.assignActions(this.props.actions);
+	}
+	
   },
   
   componentDidUpdate: function(){
   
     this.handleStyles();
+	if(this.props.acceptActions){
+	  this.assignActions(this.props.actions);
+	}
   
+  },
+  
+  assignActions: function(actions) {
+    
+	if(Channel){
+	  for(var i=0;i<actions.length;i++){
+	    Channel[actions[i].name] = actions[i].action;
+	  }
+	}
+	
   },
   
   handleStyles: function(){
   
+    var variation = this.props.variation;
     var elem = this.getDOMNode().children[0];
-    elem.style.padding = '.45em .6em .45em .6em';
-  
+	
+	if(variation === 'regular'){
+	  $(elem).addClass('regular');
+	  $(this.getDOMNode()).css({
+	    marginBottom:'.5em'
+	  });
+	}
+    
     var self = this;
 	if(!self.props.dynamic) {
 	  elem.style.boxShadow = 'inset 0 -3px #e56e5c';
@@ -291,6 +545,7 @@ var PaddedUnderline = React.createClass({displayName: 'PaddedUnderline',
 	    $(elem).addClass('focused');
 	  }
 	});
+	
   },
 
   render: function(){
@@ -312,14 +567,14 @@ var PaddedUnderline = React.createClass({displayName: 'PaddedUnderline',
 });
 
 module.exports = PaddedUnderline;
-},{"./PaddedUnderline.css":6}],8:[function(require,module,exports){
-var css = ".parallax {\r\n  -webkit-perspective: 1px;\r\n          perspective: 1px;\r\n  top:.5vh;\r\n  overflow-x: hidden;\r\n  overflow-y: auto;\r\n  position:relative;\r\n  height:99vh;\r\n}\r\n  \r\n.parallax__group:nth-child(1){} \r\n \r\n.parallax__group:nth-child(2){}\r\n\r\n.parallax__layer {\r\n  position: absolute;\r\n  top: 0;\r\n  bottom: 0;\r\n  left: 0;\r\n  right: 0;\r\n  height: 100vh;\r\n}\r\n\r\n.parallax__layer--base {\r\n\r\n  transform: translateZ(0);\r\n  -webkit-transform: translateZ(0);\r\n  \r\n}\r\n\r\n.parallax__layer--back {\r\n\r\n  transform: translateZ(-1px) scale(2);\r\n  -webkit-transform: translateZ(-1px) scale(2);\r\n  width:100%;\r\n}\r\n\r\n.parallax__group {\r\n  position:relative;\r\n  background: rgba(130,130,230,0.01);\r\n  height:100vh;\r\n  -webkit-transform-style: preserve-3d;\r\n          transform-style: preserve-3d;\r\n  width:100%;\r\n}\r\n\r\n.parallax__below{\r\n  position:absolute;\r\n  top:100vh;\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],9:[function(require,module,exports){
+},{"./../../Actions/actions.js":1,"./PaddedUnderline.css":13}],15:[function(require,module,exports){
+var css = ".parallax {\r\n  -webkit-perspective: 1px;\r\n          perspective: 1px;\r\n  top:.5vh;\r\n  overflow-x: hidden;\r\n  overflow-y: auto;\r\n  position:relative;\r\n  height:99vh;\r\n}\r\n  \r\n.parallax__group:nth-child(1){} \r\n \r\n.parallax__group:nth-child(2){}\r\n\r\n.parallax__layer {\r\n  position: absolute;\r\n  top: 0;\r\n  bottom: 0;\r\n  left: 0;\r\n  right: 0;\r\n  height: 100vh;\r\n}\r\n\r\n.parallax__layer--base {\r\n\r\n  transform: translateZ(0);\r\n  -webkit-transform: translateZ(0);\r\n  \r\n}\r\n\r\n.parallax__layer--back {\r\n\r\n  transform: translateZ(-1px) scale(2);\r\n  -webkit-transform: translateZ(-1px) scale(2);\r\n  width:100%;\r\n}\r\n\r\n.parallax__group {\r\n  position:relative;\r\n  background: rgba(130,130,230,0.01);\r\n  height:100vh;\r\n  -webkit-transform-style: preserve-3d;\r\n          transform-style: preserve-3d;\r\n  width:100%;\r\n}\r\n\r\n.parallax__below{\r\n  position:absolute;\r\n  top:100vh;\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],16:[function(require,module,exports){
 'use strict';
 
 require('./ParallaxPage.css');
 
-var ParallaxPage = React.createClass({displayName: 'ParallaxPage',
+var ParallaxPage = React.createClass({displayName: "ParallaxPage",
 
   getDefaultProps: function(){
   
@@ -383,227 +638,402 @@ var ParallaxPage = React.createClass({displayName: 'ParallaxPage',
 });
 
 module.exports = ParallaxPage;
-},{"./ParallaxPage.css":8}],10:[function(require,module,exports){
-var css = "@media all and (max-width:600px) {\r\n\r\n.signup .simple-row div{\r\n\r\n  min-height: 45vh;\r\n  \r\n  \r\n}\r\n\r\n.signup figure{\r\n\r\n  min-height: 45vh;\r\n  \r\n}\r\n\r\n\r\n\r\n.signup .center-wrapper figure{\r\n  \r\n  padding:0;\r\n  \r\n}\r\n\r\n\r\n.signup .center-wrapper{\r\n\r\n  position:relative;\r\n  width:110%;\r\n  top:2em;\r\n  margin-right:auto;\r\n  margin-left:auto;\r\n\r\n}\r\n\r\n.signup .honey{\r\n   \r\n   width:100%;\r\n    \r\n}\r\n\r\n.signup .cool{\r\n\r\n  width:85%;\r\n\r\n}\r\n\r\n.signup .signup-icons{\r\n  font-size: .75em;\r\n  padding-top: 1.1em;\r\n}\r\n\r\n.signup .below-article{\r\n  bottom: 25%;\r\n  font-size: 1.4em;\r\n}\r\n  \r\n\r\n.signup .simple{\r\n  position:absolute;\r\n  width: 100%; \r\n  text-align: center;\r\n  z-index: 10;\r\n  background: rgba(10,20,40,0.3);\r\n}\r\n\r\n.signup .oval-button {\r\n   font-size: 1em;\r\n   top:-2%;\r\n}\r\n\r\n.signup .simple-row h3{\r\n\r\n  padding: .8em;\r\n  padding-top:3em;\r\n  color: white;  \r\n  text-decoration: underline;\r\n  \r\n}\r\n\r\n.signup .jumbo-inner{\r\n  font-size: 1.1em;\r\n  top: -21%;\r\n}\r\n\r\n.signup .simple-row p{\r\n\r\n  color: white;\r\n\r\n}\r\n\r\n.signup .honey img{\r\n\r\n  padding: 0;\r\n  padding-right: 0;\r\n  width: 100%;\r\n  height:100;\r\n  position:absolute;\r\n  left:0;\r\n  top:0;\r\n  box-shadow: 0 0 0 0 white;\r\n\r\n}\r\n\r\n.signup .egon{\r\n  top:-2.25em;\r\n}\r\n\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],11:[function(require,module,exports){
-var css = "/*the height break point seems to be just over 450px;\r\n *width breakpoint 350px;\r\n */\r\n\r\n#underline{\r\n\r\n  text-decoration: underline;\r\n\r\n}\r\n\r\n/*for the language picker and sign-in button\r\n *the entire page needs to be wrapped inside the parallax class and it needs\r\n *to have the appropriate height to keep a second scroller from appearing\r\n */\r\n\t\r\n.parallax {\r\n  -webkit-perspective: 1px;\r\n          perspective: 1px;\r\n  top:.5vh;\r\n  overflow-x: hidden;\r\n  overflow-y: auto;\r\n  position:relative;\r\n  height:99vh;\r\n  background:white;\r\n}\r\n\r\n.parallax__layer {\r\n\r\n  position: absolute;\r\n  top: 0;\r\n  right: 0;\r\n  bottom: 0;\r\n  left: 0;\r\n  height:100vh;\r\n}\r\n\r\n.parallax__layer--base {\r\n\r\n  webkit-transform: translateZ(0);\r\n  transform: translateZ(0);\r\n  -webkit-transform: translateZ(0);\r\n\r\n}\r\n\r\n.parallax__layer--back {\r\n\r\n  -webkit-transform: translateZ(-1px);\r\n  transform: translateZ(-1px);\r\n  -webkit-transform: translateZ(-1px) scale(2);\r\n  width:100%;\r\n   \r\n}\r\n\r\n.parallax__group {\r\n  position:relative;\r\n  background: rgba(130,130,230,0.01);\r\n  height:100vh;\r\n  -webkit-transform-style: preserve-3d;\r\n          transform-style: preserve-3d;\r\n  width:100%;\r\n  -webkit-transform-style: preserve-3d;\r\n}\r\n  \r\n.parallax__group:nth-child(2){\r\n  background: white;\r\n}\r\n\r\n/***\r\n three pages in total\r\n ***/\r\n\r\n.signup .first-page{}\r\n\r\n.signup{\r\n  width:100%;\r\n  position:absolute;\r\n}\r\n \r\n.second-page{\r\n  top:30vh;\r\n  position:relative; \r\n  background:white;\r\n}\r\n \r\n.third-page{\r\n  top:40vh;\r\n  position:relative;\r\n  left:0;\r\n  margin:0;\r\n  margin-top:1em;\r\n\r\n}\r\n\r\n.signup .third-page .container{\r\n\r\n  padding-top: 3em;\r\n\r\n}\r\n\r\n.signup .near-footer{\r\n\r\n  top:1.5em;\r\n  font-size:1em;\r\n  background: #e56e5c;\r\n  color:white;\r\n  width:100%;\r\n  position:relative;\r\n  \r\n}\r\n\r\n/*wrap the second and third pages*/\r\n\r\n.under-back{\r\n  position:absolute;\r\n  width:100%;\r\n  top:200vh;\r\n}\r\n\r\n\r\n/*top header*/\r\n\r\n.signup-language, .signup-button{\r\n    position: absolute;\r\n    padding: 1vh;\r\n\tmargin: .75em;\r\n}\r\n\r\n.signup-button{\r\n  right:0;\r\n}\r\n\r\n/*hero-unit*/\t\r\n \r\n.signup .jumbo{\r\n  \r\n  position:relative;\r\n  top:-8%;\r\n  height:70%;\r\n  width:100%;\r\n  text-align:center;\r\n  color:black;\r\n  overflow:hidden:\r\n\r\n}\r\n\r\n  \r\n  \r\n.signup .jumbo img:nth-child(1){\r\n  \r\n  position:absolute;\r\n  z-index:0;\r\n  left:-25%;\r\n  top:-25%;\r\n  opacity:0.35;\r\n    \r\n}\r\n  \r\n.signup .jumbo img:nth-child(2){\r\n\r\n  top:.5em;\r\n  display:block;\r\n  position:relative;\r\n  z-index:0;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  \r\n}\r\n  \r\n.jumbo-inner{\r\n  \r\n  position:relative;\r\n  top:-14%;\r\n  font-size:1.4em;\r\n  margin-left:5%;\r\n  margin-right:5%;\r\n\r\n}\r\n  \r\n.signup .jumbo i{\r\n\r\n  margin-top:-.2em;\r\n  position:relative;\r\n  display:block;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  width:90%;\r\n  font-size:.9em;\r\n  color:#000;\r\n \r\n}\r\n\r\n.signup .jumbo h2{\r\n  \r\n  color:black;\r\n  font-size:1.4em;\r\n  \r\n}\r\n\r\n\t\t\r\n.signup .oval-button{\r\n  text-align:center;\r\n  color:white;\r\n  background: #e5635c;\r\n  padding: .75em;\r\n  position:relative;\r\n  display:block;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  width:15em;\r\n  border-radius:20px;\r\n  font-family: 'Open-Sans-regular';\r\n  font-weight:bold;\r\n  font-size:1.2em;\r\n}\r\n  \r\n.signup .second-oval{\r\n\r\n  background:blue;\r\n\r\n}\r\n  \r\n  \r\n/*second section of the first page\r\n  the first page actually being two pages of vh (window height)\r\n */  \r\n  \r\n#section-two{\r\n  left:0;\r\n  width:90%;\r\n  height:100vh;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  font-family: 'Open-Sans-regular';\r\n  font-size:1.2em;\r\n}\r\n\r\n/*wrap the icon section*/\r\n  \r\n.signup article{\r\n  position:relative;\r\n  top:11%;\r\n  width:110%;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  height:65%;\r\n}\r\n\r\n.signup .signup-icons div{\r\n  margin-top:3em;\r\n}\r\n\r\n.signup .signup-icons p{\r\n  padding-top:1em;\r\n}\r\n  \r\n\r\n  /*statement*/\r\n  \r\n.below-article{\t\r\n\tposition:relative;\r\n\tbottom:20%;\r\n\tclear:float;\r\n\twidth:80%;\r\n\tpadding-top:1.5em;\r\n\tfont-size:1.4em;\r\n\tfont-style: italic;\r\n\tmargin-left:auto;\r\n\tmargin-right:auto;\r\n\ttext-align: center;\r\n\tfont-family: 'Open-Sans-600';\r\n}\r\n  \r\n  \r\n.center-wrapper .row{\r\n\r\n margin-top:3em;\r\n\r\n} \r\n  \r\n#section-two div{\r\n    \r\n\twidth: 25%;\r\n\theight:30%;\r\n\tfloat:left;\r\n\tfont-size:1.2em;\r\n\ttext-align:center;\r\n\t\r\n}\r\n  \r\n#section-two span{\r\n\r\n    \r\n\twidth: 8%;\r\n\theight:30%;\r\n\tfloat:left;\r\n\tfont-size:1.2em;\r\n\ttext-align:center;\r\n\t\r\n\r\n}\r\n  \r\n/*TODO make less global*/\r\n\r\n.signup.min-height div{\r\n  \r\n  padding: 0 15px;\r\n  min-height: 50vh;\r\n \r\n}\r\n\r\n.signup .min-height h3{\r\n\r\n  color:#e56e5c;\r\n\r\n}\r\n\r\n.signup .min-height p{\r\n\r\n  color: slategray;\r\n\r\n}\r\n\r\n.signup figure {\r\n\r\n  height:45vh;\r\n  min-width:45vh;\r\n  display:cover;\r\n  overflow:hidden;\r\n  \r\n\r\n}\r\n\r\n.signup figure img{\r\n\r\n  padding:1.1em;\r\n  padding-right:5em;\r\n  width: 100%;\r\n  height:100;\r\n  position:absolute;\r\n  left:0;\r\n  top:0;\r\n  box-shadow: 0 0 5px 2px #ccc;\r\n\r\n}\r\n\r\n.signup .fair-heading{\r\n\r\n  position:relative;\r\n  top:3em;\r\n  color:#e56e5c;\r\n  background:white;\r\n\r\n}\r\n\r\n\r\n.fair-heading p{\r\n\r\n  color:slategray;\r\n  padding-top:1.25em;\r\n  \r\n}\r\n\r\n.center-wrapper figure{\r\n  \r\n  padding:1em;\r\n  \r\n}\r\n\r\n\r\n.center-wrapper{\r\n\r\n  position:relative;\r\n  width:90%;\r\n  top:2em;\r\n  margin-right:auto;\r\n  margin-left:auto;\r\n\r\n}\r\n\r\n\r\n.signup .near-footer button{\r\n\r\n  margin-top:1.5em;\r\n  box-shadow: 0 0 3px rgba(10,10,10,0.3);\r\n  \r\n}\r\n\r\n.signup .footer{\r\n\r\n  position:relative;\r\n  color:white;\r\n  top:2.8em;\r\n  \r\n}\r\n\r\n\r\n.signup .modal-dialog, .modal-content{\r\n  border: solid black 10px;\r\n  position:relative;\r\n  z-index:9999;\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],12:[function(require,module,exports){
+},{"./ParallaxPage.css":15}],17:[function(require,module,exports){
 'use strict';
 
-var Footer = React.createFactory(require('./../Footer/Footer.js'));
+var Actions = require('./../../actions/actions.js');
 
+var TopNav = require('./../TopNav/TopNav.js'),
+    PaddedUnderline = require('./../PaddedUnderline/PaddedUnderline.js'),
+    Carousel = require('./../Carousel/Carousel.js'),
+    QuatroGallery = require('./../QuatroGallery/QuatroGallery.js'),
+	Footer = require('./../Footer/Footer.js');
+	
+var PhotoCollections = React.createClass({displayName: "PhotoCollections",
+
+  getDefaultProps: function() {
+    return ({ featuredCollections: [{}] });
+  },
+ 
+ 
+  render: function() {
+	
+	var self = this;
+	return (
+	 
+	  React.createElement("div", {className: "collections"}, 
+	 
+	    React.createElement(TopNav, null), 
+		
+		React.createElement("div", {className: "container margin-top3"}, 
+		  
+		  React.createElement("div", {className: "row center-block eighty"}, 
+			React.createElement(PaddedUnderline, {template: React.createElement("b", null, "Featured Collections"), isFocused: "true"})
+		  ), /*end 1st row*/
+		  
+		  React.createElement("div", {className: "row center-block margin-top2 eighty"}, 
+		    React.createElement("h5", {className: "gray"}, 
+			  "Video Art"
+			), 
+			React.createElement("hr", null)
+		  ), 
+		  
+		  React.createElement(Carousel, {userProfile: this.props.userProfile, featuredCollections: this.props.featuredCollections, carousel_id: "carousel-video-art"}), 
+		  
+		  React.createElement("div", {className: "row center-block margin-top2 eighty"}, 
+		    React.createElement("h5", {className: "gray"}, 
+			  "Sculpture"
+			), 
+			React.createElement("hr", null)
+		  ), 
+		  React.createElement(Carousel, {userProfile: this.props.userProfile, featuredCollections: this.props.featuredCollections})
+			      
+		), /*end container*/
+		React.createElement("div", {className: "container margin-top3"}, 
+		  
+		  React.createElement("div", {className: "row center-block eighty margin-top3"}, 
+			  React.createElement(PaddedUnderline, {template: React.createElement("b", null, "Art Lovers Collections"), isFocused: "true"})
+		  ), /*end 1st row*/
+		  
+		  React.createElement("div", {className: "row center-block quatrorow margin-top2 eighty"}, 
+		     React.createElement("div", {className: "col-sm-12 col-md-6 col-lg-4"}, 
+			   React.createElement(QuatroGallery, {artLoverCollections: self.props.artLoverCollections})
+			 ), 
+			 React.createElement("div", {className: "col-sm-12 col-md-6 col-lg-4"}, 
+			   React.createElement(QuatroGallery, {artLoverCollections: self.props.artLoverCollections})
+			 ), 
+			 React.createElement("div", {className: "col-sm-12 col-md-6 col-lg-4"}, 
+			   React.createElement(QuatroGallery, {artLoverCollections: self.props.artLoverCollections})
+			 )
+		  )
+		
+		), /*end container 2*/
+		React.createElement("br", null), 
+		React.createElement(Footer, {className: "margin-top3"})
+		
+	  )
+	
+	);
+  
+  }
+  
+});
+
+
+module.exports = PhotoCollections;
+	
+},{"./../../actions/actions.js":2,"./../Carousel/Carousel.js":3,"./../Footer/Footer.js":7,"./../PaddedUnderline/PaddedUnderline.js":14,"./../QuatroGallery/QuatroGallery.js":19,"./../TopNav/TopNav.js":24}],18:[function(require,module,exports){
+var css = ".quatros{\r\n  width:100%;\r\n  height: 250px;\r\n}\r\n\r\n.quatro .image-wrap{\r\n  width:46%;\r\n  height:46%;\r\n  margin:2%;\r\n  overflow:hidden;\r\n  float:left;\r\n  box-shadow: 0 0 2px 2px #ccc;\r\n}\r\n\r\n.quatro .gray{\r\n  margin-left:1.9%;\r\n}\r\n\r\n.quatro {\r\n  margin:0;\r\n  padding:0;\r\n  margin-bottom: 3.25em; \r\n  position:relative;\r\n  width:100%;\r\n  left:-5%;\r\n  //border: solid pink 2px;\r\n  height:100%;\r\n}\r\n\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],19:[function(require,module,exports){
+'use strict';
+
+require('./QuatroGallery.css');
+
+var QuatroGallery = React.createClass({displayName: "QuatroGallery",
+  
+  getDefaultProps: function(){
+    return ({
+	  artLoverCollections: [{}],
+	  owner: 'owner'
+	});
+  },
+  
+  componentDidMount: function(){
+    //alert(JSON.stringify(this.props));
+  },
+  
+  render: function(){
+    var quatro;
+	if( this.props.artLoverCollections[0].collection.mainPhoto){
+      quatro = this.renderImages();
+	}
+	else{
+	  quatro = function(){ return (React.createElement("div", null, "Nothing loaded")) }
+	}
+	return (
+	  React.createElement("div", {className: "quatro"}, 
+	    React.createElement("h5", {className: "gray"}, 
+          this.props.owner
+	    ), 
+	    React.createElement("div", {className: "quatros"}, 
+	      quatro
+	    )
+	  )
+	);
+  },
+  
+  renderImages: function(){
+  
+    var images = this.props.artLoverCollections.map( function(item,i){
+	  if(i<4){
+	  return(
+
+	    React.createElement("div", {className: "image-wrap"}, 
+	      React.createElement("img", {className: "img-responsive", src: item.collection.mainPhoto.photoUrl, alt: item.collection.mainPhoto.photoUrl})
+	    )
+	  );
+	  }
+	});
+  
+    return images;
+  
+  }
+});
+
+module.exports = QuatroGallery;
+},{"./QuatroGallery.css":18}],20:[function(require,module,exports){
+var css = "@media all and (max-width:600px) {\r\n\r\n.signup .simple-row div{\r\n\r\n  min-height: 45vh;\r\n  \r\n  \r\n}\r\n\r\n.signup figure{\r\n\r\n  min-height: 45vh;\r\n  \r\n}\r\n\r\n\r\n\r\n.signup .center-wrapper figure{\r\n  \r\n  padding:0;\r\n  \r\n}\r\n\r\n\r\n.signup .center-wrapper{\r\n\r\n  position:relative;\r\n  width:110%;\r\n  top:2em;\r\n  margin-right:auto;\r\n  margin-left:auto;\r\n\r\n}\r\n\r\n.signup .honey{\r\n   \r\n   width:100%;\r\n    \r\n}\r\n\r\n.signup .cool{\r\n\r\n  width:85%;\r\n\r\n}\r\n\r\n.signup .signup-icons{\r\n  font-size: .75em;\r\n  padding-top: 1.1em;\r\n}\r\n\r\n.signup .below-article{\r\n  bottom: 25%;\r\n  font-size: 1.4em;\r\n}\r\n  \r\n\r\n.signup .simple{\r\n  position:absolute;\r\n  width: 100%; \r\n  text-align: center;\r\n  z-index: 10;\r\n  background: rgba(10,20,40,0.3);\r\n}\r\n\r\n.signup .oval-button {\r\n   font-size: 1em;\r\n   top:-2%;\r\n}\r\n\r\n.signup .simple-row h3{\r\n\r\n  padding: .8em;\r\n  padding-top:3em;\r\n  color: white;  \r\n  text-decoration: underline;\r\n  \r\n}\r\n\r\n.signup .jumbo-inner{\r\n  font-size: 1.1em;\r\n  top: -21%;\r\n}\r\n\r\n.signup .simple-row p{\r\n\r\n  color: white;\r\n\r\n}\r\n\r\n.signup .honey img{\r\n\r\n  padding: 0;\r\n  padding-right: 0;\r\n  width: 100%;\r\n  height:100;\r\n  position:absolute;\r\n  left:0;\r\n  top:0;\r\n  box-shadow: 0 0 0 0 white;\r\n\r\n}\r\n\r\n.signup .egon{\r\n  top:-2.25em;\r\n}\r\n\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],21:[function(require,module,exports){
+var css = "/*the height break point seems to be just over 450px;\r\n *width breakpoint 350px;\r\n */\r\n\r\n#underline{\r\n\r\n  text-decoration: underline;\r\n\r\n}\r\n\r\n/*for the language picker and sign-in button\r\n *the entire page needs to be wrapped inside the parallax class and it needs\r\n *to have the appropriate height to keep a second scroller from appearing\r\n */\r\n\t\r\n.parallax {\r\n  -webkit-perspective: 1px;\r\n          perspective: 1px;\r\n  top:.5vh;\r\n  overflow-x: hidden;\r\n  overflow-y: auto;\r\n  position:relative;\r\n  height:99vh;\r\n  background:white;\r\n}\r\n\r\n.parallax__layer {\r\n\r\n  position: absolute;\r\n  top: 0;\r\n  right: 0;\r\n  bottom: 0;\r\n  left: 0;\r\n  height:100vh;\r\n}\r\n\r\n.parallax__layer--base {\r\n\r\n  webkit-transform: translateZ(0);\r\n  transform: translateZ(0);\r\n  -webkit-transform: translateZ(0);\r\n\r\n}\r\n\r\n.parallax__layer--back {\r\n\r\n  -webkit-transform: translateZ(-1px);\r\n  transform: translateZ(-1px);\r\n  -webkit-transform: translateZ(-1px) scale(2);\r\n  width:100%;\r\n   \r\n}\r\n\r\n.parallax__group {\r\n  position:relative;\r\n  background: rgba(130,130,230,0.01);\r\n  height:100vh;\r\n  -webkit-transform-style: preserve-3d;\r\n          transform-style: preserve-3d;\r\n  width:100%;\r\n  -webkit-transform-style: preserve-3d;\r\n}\r\n  \r\n.parallax__group:nth-child(2){\r\n  background: white;\r\n}\r\n\r\n/***\r\n three pages in total\r\n ***/\r\n\r\n.signup .first-page{}\r\n\r\n.signup{\r\n  width:100%;\r\n  position:absolute;\r\n}\r\n \r\n.second-page{\r\n  top:30vh;\r\n  position:relative; \r\n  background:white;\r\n}\r\n \r\n.third-page{\r\n  top:40vh;\r\n  position:relative;\r\n  left:0;\r\n  margin:0;\r\n  margin-top:1em;\r\n\r\n}\r\n\r\n.signup .third-page .container{\r\n\r\n  padding-top: 3em;\r\n\r\n}\r\n\r\n.signup .near-footer{\r\n\r\n  top:1.5em;\r\n  font-size:1em;\r\n  background: #e56e5c;\r\n  color:white;\r\n  width:100%;\r\n  position:relative;\r\n  \r\n}\r\n\r\n/*wrap the second and third pages*/\r\n\r\n.under-back{\r\n  position:absolute;\r\n  width:100%;\r\n  top:200vh;\r\n}\r\n\r\n\r\n/*top header*/\r\n\r\n.signup-language, .signup-button{\r\n    position: absolute;\r\n    padding: 1vh;\r\n\tmargin: .75em;\r\n\t\r\n}\r\n\r\n.signup-button{\r\n  right:0;\r\n}\r\n\r\n.register-button{\r\n  position:absolute;\r\n  padding:1vh;\r\n  margin:.75em;\r\n  right:5em;\r\n\r\n}\r\n\r\n/*hero-unit*/\t\r\n \r\n.signup .jumbo{\r\n  \r\n  position:relative;\r\n  top:-8%;\r\n  height:70%;\r\n  width:100%;\r\n  text-align:center;\r\n  color:black;\r\n  overflow:hidden:\r\n}\r\n\r\n  \r\n  \r\n.signup .jumbo img:nth-child(1){\r\n  \r\n  position:absolute;\r\n  z-index:0;\r\n  left:-25%;\r\n  top:-25%;\r\n  opacity:0.35;\r\n    \r\n}\r\n  \r\n.signup .jumbo img:nth-child(2){\r\n\r\n  top:.5em;\r\n  display:block;\r\n  position:relative;\r\n  z-index:0;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  \r\n}\r\n  \r\n.jumbo-inner{\r\n  \r\n  position:relative;\r\n  top:-14%;\r\n  font-size:1.4em;\r\n  margin-left:5%;\r\n  margin-right:5%;\r\n\r\n}\r\n  \r\n.signup .jumbo i{\r\n\r\n  margin-top:-.2em;\r\n  position:relative;\r\n  display:block;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  width:90%;\r\n  font-size:.9em;\r\n  color:#000;\r\n \r\n}\r\n\r\n.signup .jumbo h2{\r\n  \r\n  color:black;\r\n  font-size:1.4em;\r\n  \r\n}\r\n\r\n\t\t\r\n.signup .oval-button{\r\n  text-align:center;\r\n  color:white;\r\n  background: #e5635c;\r\n  padding: .75em;\r\n  position:relative;\r\n  display:block;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  width:15em;\r\n  border-radius:20px;\r\n  font-family: 'Open-Sans-regular';\r\n  font-weight:bold;\r\n  font-size:1.2em;\r\n}\r\n  \r\n.signup .second-oval{\r\n\r\n  background:blue;\r\n\r\n}\r\n  \r\n  \r\n/*second section of the first page\r\n  the first page actually being two pages of vh (window height)\r\n */  \r\n  \r\n#section-two{\r\n  left:0;\r\n  width:90%;\r\n  height:100vh;\r\n  position:relative;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  font-family: 'Open-Sans-regular';\r\n  font-size:1.2em;\r\n}\r\n\r\n/*wrap the icon section*/\r\n  \r\n.signup article{\r\n  position:relative;\r\n  top:11%;\r\n  width:110%;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  height:65%;\r\n}\r\n\r\n.signup .signup-icons div{\r\n  margin-top:3em;\r\n}\r\n\r\n.signup .signup-icons p{\r\n  padding-top:1em;\r\n}\r\n  \r\n\r\n  /*statement*/\r\n  \r\n.below-article{\t\r\n\tposition:relative;\r\n\tbottom:20%;\r\n\tclear:float;\r\n\twidth:80%;\r\n\tpadding-top:1.5em;\r\n\tfont-size:1.4em;\r\n\tfont-style: italic;\r\n\tmargin-left:auto;\r\n\tmargin-right:auto;\r\n\ttext-align: center;\r\n\tfont-family: 'Open-Sans-600';\r\n}\r\n  \r\n  \r\n.center-wrapper .row{\r\n\r\n margin-top:3em;\r\n\r\n} \r\n  \r\n#section-two div{\r\n    \r\n\twidth: 25%;\r\n\theight:30%;\r\n\tfloat:left;\r\n\tfont-size:1.2em;\r\n\ttext-align:center;\r\n\t\r\n}\r\n  \r\n#section-two span{\r\n\r\n    \r\n\twidth: 8%;\r\n\theight:30%;\r\n\tfloat:left;\r\n\tfont-size:1.2em;\r\n\ttext-align:center;\r\n\t\r\n\r\n}\r\n  \r\n/*TODO make less global*/\r\n\r\n.signup.min-height div{\r\n  \r\n  padding: 0 15px;\r\n  min-height: 50vh;\r\n \r\n}\r\n\r\n.signup .min-height h3{\r\n\r\n  color:#e56e5c;\r\n\r\n}\r\n\r\n.signup .min-height p{\r\n\r\n  color: slategray;\r\n\r\n}\r\n\r\n.signup figure {\r\n\r\n  height:45vh;\r\n  min-width:45vh;\r\n  display:cover;\r\n  overflow:hidden;\r\n  \r\n\r\n}\r\n\r\n.signup figure img{\r\n\r\n  padding:1.1em;\r\n  padding-right:5em;\r\n  width: 100%;\r\n  height:100;\r\n  position:absolute;\r\n  left:0;\r\n  top:0;\r\n  box-shadow: 0 0 5px 2px #ccc;\r\n\r\n}\r\n\r\n.signup .fair-heading{\r\n\r\n  position:relative;\r\n  top:3em;\r\n  color:#e56e5c;\r\n  background:white;\r\n\r\n}\r\n\r\n\r\n.fair-heading p{\r\n\r\n  color:slategray;\r\n  padding-top:1.25em;\r\n  \r\n}\r\n\r\n.center-wrapper figure{\r\n  \r\n  padding:1em;\r\n  \r\n}\r\n\r\n\r\n.center-wrapper{\r\n\r\n  position:relative;\r\n  width:90%;\r\n  top:2em;\r\n  margin-right:auto;\r\n  margin-left:auto;\r\n\r\n}\r\n\r\n\r\n.signup .near-footer button{\r\n\r\n  margin-top:1.5em;\r\n  box-shadow: 0 0 3px rgba(10,10,10,0.3);\r\n  \r\n}\r\n\r\n.signup .footer{\r\n\r\n  position:relative;\r\n  color:white;\r\n  top:2.8em;\r\n  \r\n}\r\n\r\n\r\n.signup .modal-dialog, .modal-content{\r\n  border: solid black 10px;\r\n  position:relative;\r\n  z-index:9999;\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],22:[function(require,module,exports){
+'use strict';
+
+var FacebookLogin = require('./../../utilities/login/facebookLogin.js');
+var Actions = require('./../../actions/actions.js');
+
+var Footer = React.createFactory(require('./../Footer/Footer.js'));
 require('./signup.css');
 require('./signup-phones.css');
 
 
-var Signup = React.createClass({displayName: 'Signup',
+var Signup = React.createClass(
+    {displayName: "Signup",
+      handleFacebookLogin: function () {
+        FacebookLogin.login();
+      },
 
-  render: function(){
 
-    return (
-	  React.createElement("div", {className: "signup"}, 
-	    
+      render: function () {
+        return (
+            React.createElement("div", {className: "signup"}, 
 		/*modal*/
-		React.createElement("div", {className: "modal fade", id: "basicModal", tabindex: "-1", role: "dialog", 
-	      'aria-labelledby': "basicModal", 'aria-hidden': "true"}, 
-		  React.createElement("div", {className: "modal-dialog"}, 
-		    React.createElement("div", {className: "modal-content"}, 
-			  React.createElement("div", {className: "modal-header"}, 
-			    React.createElement("button", {type: "button", className: "close", 'data-dismiss': "modal", 'aria-hiddden': "true"}, "x"), 
-	            React.createElement("h4", {className: "modal-title", id: "myModalLabel"}, "Modal title")
+              React.createElement("div", {className: "modal fade", id: "basicModal", tabindex: "-1", role: "dialog", 
+              "aria-labelledby": "basicModal", "aria-hidden": "true"}, 
+                React.createElement("div", {className: "modal-dialog"}, 
+                  React.createElement("div", {className: "modal-content"}, 
+                    React.createElement("div", {className: "modal-header"}, 
+                      React.createElement("button", {type: "button", className: "close", "data-dismiss": "modal", "aria-hiddden": "true"}, "x"), 
+                      React.createElement("h4", {className: "modal-title", id: "myModalLabel"}, "Modal title")
+                    ), 
+                    React.createElement("div", {className: "modal-body"}, 
+                      React.createElement("h3", null, "Modal body")
+                    ), 
+                    React.createElement("div", {className: "modal-footer"}, 
+                      React.createElement("button", {type: "button", className: "btn btn-default", "data-dismiss": "modal"}, "Close"), 
+                      React.createElement("button", {type: "button", className: "btn btn-primary"}, "Save Changes")
+                    )
+                  )
+                )
               ), 
-              React.createElement("div", {className: "modal-body"}, 
-                React.createElement("h3", null, "Modal body")
+		/*modal*/
+              React.createElement("div", {className: "modal fade", id: "registerModal", tabindex: "-1", role: "dialog", 
+              "aria-labelledby": "registerModal", "aria-hidden": "true"}, 
+                React.createElement("div", {className: "modal-dialog"}, 
+                  React.createElement("div", {className: "modal-content"}, 
+                    React.createElement("div", {className: "modal-header"}, 
+                      React.createElement("button", {type: "button", className: "close", "data-dismiss": "modal", "aria-hiddden": "true"}, "x"), 
+                      React.createElement("h4", {className: "register-title", id: "registerLabel"}, "WELCOME TO ARTFACTUM")
+                    ), 
+                    React.createElement("div", {className: "modal-body"}, 
+                      React.createElement("h6", null, "Alread have an Artfactum account?"), 
+                      React.createElement("button", {class: "facebook-connect", onClick: this.handleFacebookLogin}, "Quick sign-up using Facebook")
+                    ), 
+                    React.createElement("div", {className: "modal-footer"}, 
+                      React.createElement("button", {type: "button", className: "btn btn-default", "data-dismiss": "modal"}, "Close"), 
+                      React.createElement("button", {type: "button", className: "btn btn-primary"}, "Save Changes")
+                    )
+                  )
+                )
               ), 
-              React.createElement("div", {className: "modal-footer"}, 
-                React.createElement("button", {type: "button", className: "btn btn-default", 'data-dismiss': "modal"}, "Close"), 
-           	    React.createElement("button", {type: "button", className: "btn btn-primary"}, "Save Changes")
-              )					
-            )					
-          )					
-        ), 				
-        
+
 		/*main page*/
-		React.createElement("div", {className: "parallax"}, 
-          React.createElement("div", {id: "first-page", className: "parallax__group"}, 
-	        React.createElement("div", {className: "parallax__layer parallax__layer--back"}, 
-              React.createElement("header", {className: "jumbo"}, 
-			    React.createElement("img", {src: "images/flowers_big.jpg"}), 
-				React.createElement("img", {src: "images/logo_AF+_256.png", alt: "images/logo_AF+_.png"}), 
-				React.createElement("div", {className: "jumbo-inner"}, 
-				  React.createElement("h2", null, "A Better Way to Discover New Art"), 
-				  React.createElement("i", null, 
-				    "Artfactum is an online marketplace where artists and art lovers create virtual galleries to showcase and sell art to a global community"
-				  )
-				)
-			  ), 
-		  	    
-			  React.createElement("p", null, 
-				React.createElement("p", {className: "oval-button"}, React.createElement("span", null, "Launch Your Own Gallery")), 
-				React.createElement("p", {className: "second-oval oval-button"}, React.createElement("span", null, "Discover"))
-			  )
-			  
-			), /*end parallax back*/
-			
-			React.createElement("div", {className: "parallax__layer parallax__layer--base"}, 
-			  React.createElement("select", {className: "light signup-language"}, 
-				React.createElement("option", null, "English"), 
-				React.createElement("option", null, "Spanish")
-			  ), 
-			  React.createElement("button", {className: "light signup-button", 
-			    'data-toggle': "modal", 
-				'data-target': "#basicModal"}, "Sign up"
-			  )
-			), /*end parallax base*/
-			
-			React.createElement("div", {className: "under-back"}, 
-			
-			  React.createElement("div", {className: "container-fluid tomato second-page"}, 
-				React.createElement("div", {className: "center-wrapper"}, 
-				  React.createElement("div", {className: "row min-height simple-row"}, 
-				    React.createElement("div", {className: "col-xs-12 col-md-6 simple"}, 
-				      React.createElement("h3", null, 
-					    React.createElement("b", null, "Simple")
-				      ), 
-				      React.createElement("p", null, 
-					    "Upload your gallery and your artworks"
-				      )
-				    ), 
-				    React.createElement("figure", {className: "col-xs-12 col-md-6 honey"}, 
-				      React.createElement("img", {src: "images/honey.jpg"})
-				    )
-				  ), /*end row*/
-				  
-				  React.createElement("div", {className: "row min-height"}, 
-				    React.createElement("figure", {className: "col-xs-12 col-md-6"}, 
-				      React.createElement("img", {src: "images/egon.jpg"})
-				    ), 
-				    React.createElement("div", {className: "col-xs-11 col-md-6 cool"}, 
-					  React.createElement("h3", null, 
-					    React.createElement("b", null, "Cool")
-					  ), 
-					  React.createElement("p", null, 
-					    "Curate the art you love while you recommend it"
-					  )
-				    )
-				  ), /*end row*/
-				
-				  React.createElement("div", {className: "row min-height simple-row"}, 
-				    React.createElement("div", {className: "col-xs-12 col-md-6 simple"}, 
-				      React.createElement("h3", null, 
-					    React.createElement("b", null, "Effective")
-				      ), 
-				      React.createElement("p", null, 
-					    "Find the best new art by the recommendations of who really knows, the artists and art lovers"
-				      )
-				    ), 
-				    React.createElement("figure", {className: "col-xs-12 col-md-6 honey"}, 
-				      React.createElement("img", {src: "images/egon_land.jpg"})
-				    )
-				  ), /*end row*/
+              React.createElement("div", {className: "parallax"}, 
+                React.createElement("div", {id: "first-page", className: "parallax__group"}, 
+                  React.createElement("div", {className: "parallax__layer parallax__layer--back"}, 
+                    React.createElement("header", {className: "jumbo"}, 
+                      React.createElement("img", {src: "images/flowers_big.jpg"}), 
+                      React.createElement("img", {src: "images/logo_AF+_256.png", alt: "images/logo_AF+_.png"}), 
+                      React.createElement("div", {className: "jumbo-inner"}, 
+                        React.createElement("h2", null, "A Better Way to Discover New Art"), 
+                        React.createElement("i", null, 
+                        "Artfactum is an online marketplace where artists and art lovers create virtual galleries to showcase and sell art to a global community"
+                        ), 
+                        React.createElement("div", {class: "target"}), 
+                        React.createElement("div", {id: "status"})
+                      )
+                    ), 
 
-				  
-				  React.createElement("div", {className: "fair-heading row col-xs-12 text-center"}, 
-				    React.createElement("h2", {id: "underline"}, React.createElement("b", null, "And above all, fair")), 
-				    React.createElement("p", {className: "text-info"}, 
-					"If an artwork is sold, 90% for the artist, 7% for the person who recommended it, and 3% for the platform."
-				    )
-				  )/*end row*/
-				  
-			    )
-              ), 
-              
-			  React.createElement("div", {className: "third-page"}, 			  			    
-				React.createElement("div", {className: "container near-footer"}, 
-				  React.createElement("div", {className: "row"}, 
-					React.createElement("div", {className: "col-lg-8 col-md-8 col-xs-12"}, 
-					  React.createElement("h3", null, "Do you want to be part of the Artfactum community?")
-					), 
-					React.createElement("div", {className: "col-lg-4 col-md-4 col-xs-12"}, 
-					  React.createElement("div", {className: "btn-group"}, 
-					    React.createElement("button", {type: "button", className: "btn btn-default"}, "Facebook"), 
-					    React.createElement("button", {type: "button", className: "btn btn-default"}, "Twitter")
-					  )					  
-					)
-					
-				  ), /*end row*/
-				
-				  React.createElement("div", {className: "row footer"}, 
-				    React.createElement(Footer, null)
-				  )
-				
-			    )
-		      )	  
-			)
-		
-		  ), 
+                    React.createElement("p", null, 
+                      React.createElement("p", {className: "oval-button"}, 
+                        React.createElement("span", null, "Launch Your Own Gallery")
+                      ), 
+                      React.createElement("p", {className: "second-oval oval-button"}, 
+                        React.createElement("span", null, "Discover")
+                      )
+                    )
 
-		React.createElement("div", {className: "parallax__group"}, 
-		React.createElement("div", {className: "parallax__layer parallax__layer--back"}), 
-		React.createElement("div", {className: "parallax__layer parallax__layer--base"}, 
+                  ), /*end parallax back*/
 
-		React.createElement("div", {id: "section-two"}, 
+                  React.createElement("div", {className: "parallax__layer parallax__layer--base"}, 
+                    React.createElement("select", {className: "light signup-language"}, 
+                      React.createElement("option", null, "English"), 
+                      React.createElement("option", null, "Spanish")
+                    ), 
+                    React.createElement("button", {className: "light register-button", 
+                    "data-toggle": "modal", 
+                    "data-target": "#registerModal"}, "Register"
+                    ), 
+                    React.createElement("button", {className: "light signup-button", 
+                    "data-toggle": "modal", 
+                    "data-target": "#basicModal"}, "Sign In"
+                    )
+                  ), /*end parallax base*/
 
-		React.createElement("article", {className: "signup-icons"}, 
-		 
-			React.createElement("div", null, 
-			  
-			React.createElement("img", {src: "icons/icons/png/32px/pencil2.png"}), 
-			React.createElement("p", null, "Create your own Gallery")
-			  
-			), 
-			
-			React.createElement("span", null), 
-			React.createElement("div", null, 
-			  React.createElement("img", {src: "icons/icons/png/32px/coin.png"}), 
-			  React.createElement("p", null, "Sell your artworks")
-			), 
-			React.createElement("span", null), 
-			React.createElement("div", null, 
-			  React.createElement("img", {src: "icons/icons/png/32px/happy.png"}), 
-			  React.createElement("p", null, "Get paid discovering art")
-			), 
-			React.createElement("div", null, 
-			  React.createElement("img", {src: "icons/icons/png/32px/users.png"}), 
+                  React.createElement("div", {className: "under-back"}, 
 
-			  React.createElement("p", null, "A global community")
-			), 
-			React.createElement("span", null), 
-			React.createElement("div", null, 
-			  React.createElement("img", {src: "icons/icons/png/32px/volume-high.png"}), 
-			  React.createElement("p", null, "Democratized visibility")
-			), 
-			React.createElement("span", null), 
-			React.createElement("div", null, 
-			  React.createElement("img", {src: "icons/icons/png/32px/loop.png"}), 
-			  React.createElement("p", null, "Best commission ever")
-			)
-			
-		  )
-		  
-		), 
-		React.createElement("div", {className: "below-article"}, 
-			React.createElement("strong", null, "The artistic community you were waiting for")
-		  )
-		)
+                    React.createElement("div", {className: "container-fluid tomato second-page"}, 
+                      React.createElement("div", {className: "center-wrapper"}, 
+                        React.createElement("div", {className: "row min-height simple-row"}, 
+                          React.createElement("div", {className: "col-xs-12 col-md-6 simple"}, 
+                            React.createElement("h3", null, 
+                              React.createElement("b", null, "Simple")
+                            ), 
+                            React.createElement("p", null, 
+                            "Upload your gallery and your artworks"
+                            )
+                          ), 
+                          React.createElement("figure", {className: "col-xs-12 col-md-6 honey"}, 
+                            React.createElement("img", {src: "images/honey.jpg"})
+                          )
+                        ), /*end row*/
 
-	
-      )
-    )
-  )
+                        React.createElement("div", {className: "row min-height"}, 
+                          React.createElement("figure", {className: "col-xs-12 col-md-6"}, 
+                            React.createElement("img", {src: "images/egon.jpg"})
+                          ), 
+                          React.createElement("div", {className: "col-xs-11 col-md-6 cool"}, 
+                            React.createElement("h3", null, 
+                              React.createElement("b", null, "Cool")
+                            ), 
+                            React.createElement("p", null, 
+                            "Curate the art you love while you recommend it"
+                            )
+                          )
+                        ), /*end row*/
 
-  );
-  
-}
-
-});
+                        React.createElement("div", {className: "row min-height simple-row"}, 
+                          React.createElement("div", {className: "col-xs-12 col-md-6 simple"}, 
+                            React.createElement("h3", null, 
+                              React.createElement("b", null, "Effective")
+                            ), 
+                            React.createElement("p", null, 
+                            "Find the best new art by the recommendations of who really knows, the artists and art lovers"
+                            )
+                          ), 
+                          React.createElement("figure", {className: "col-xs-12 col-md-6 honey"}, 
+                            React.createElement("img", {src: "images/egon_land.jpg"})
+                          )
+                        ), /*end row*/
 
 
+                        React.createElement("div", {className: "fair-heading row col-xs-12 text-center"}, 
+                          React.createElement("h2", {id: "underline"}, 
+                            React.createElement("b", null, "And above all, fair")
+                          ), 
+                          React.createElement("p", {className: "text-info"}, 
+                          "If an artwork is sold, 90% for the artist, 7% for the person who recommended it, and 3% for the platform."
+                          )
+                        )/*end row*/
 
-module.exports = Signup
-},{"./../Footer/Footer.js":2,"./signup-phones.css":10,"./signup.css":11}],13:[function(require,module,exports){
-var css = ".top-nav{\r\n\r\n  width: 98%;\r\n  display: block;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  background: white;\r\n  \r\n}\r\n\r\n.top-nav .tabs:active{\r\n\t\r\n\tcolor: tomato;\r\n\tbox-shadow: inset 0px -5px blue;\r\n    -webkit-transition: all 0.15s linear;\r\n\ttransition: all 0.15s linear;\r\n\t\r\n}\r\n\r\n.top-nav .tabs:focus{\r\n\tcolor: tomato;\r\n\tbox-shadow: inset 0px -5px tomato;\r\n\r\n}\r\n\r\n.top-nav .top-logo-holder{\r\n  width: 50px;\r\n  height:50px;\r\n  \r\n}\r\n\r\n.top-nav .navbar{\r\n  background: white;\r\n  border: none;\r\n}\r\n\r\n.top-nav .search{\r\n\r\n  border: none;\r\n  outline: none;\r\n  box-shadow: 0 0 0 0 white;\r\n  \r\n}\r\n\r\n.top-nav .search-gl{\r\n  background: white;\r\n  border:none;\r\n  outline: none;\r\n}\r\n\r\n.top-nav .search-box{\r\n\r\n  overflow:hidden; \r\n \r\n}\r\n\r\n.top-nav .top-drop, .top-nav .top-drop:active{\r\n  \r\n  background: inherit;\r\n   \r\n}\r\n\r\n.top-nav .top-drop:hover{\r\n  background: #d1ccca;\r\n}\r\n\r\n.top-nav .userAvatar {\r\n  height: 1.7em;\r\n  width: 1.7em;\r\n  position:relative;\r\n  box-shadow: 0 0 4px 1px #eee;\r\n  display:cover;\r\n  overflow: hidden;\r\n  border-radius:50%;\r\n}\r\n\r\n.top-nav .userAvatar img{\r\n  position:relative;\r\n  margin-right:2px;\r\n  width:100%;\r\n}\r\n\r\n"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],14:[function(require,module,exports){
+                      )
+                    ), 
+
+                    React.createElement("div", {className: "third-page"}, 
+                      React.createElement("div", {className: "container near-footer"}, 
+                        React.createElement("div", {className: "row"}, 
+                          React.createElement("div", {className: "col-lg-8 col-md-8 col-xs-12"}, 
+                            React.createElement("h3", null, "Do you want to be part of the Artfactum community?")
+                          ), 
+                          React.createElement("div", {className: "col-lg-4 col-md-4 col-xs-12"}, 
+                            React.createElement("div", {className: "btn-group"}, 
+                              React.createElement("button", {type: "button", className: "btn btn-default"}, "Facebook"), 
+                              React.createElement("button", {type: "button", className: "btn btn-default"}, "Twitter")
+                            )
+                          )
+
+                        ), /*end row*/
+
+                        React.createElement("div", {className: "row footer"}, 
+                          React.createElement(Footer, null)
+                        )
+
+                      )
+                    )
+                  )
+
+                ), 
+
+                React.createElement("div", {className: "parallax__group"}, 
+                  React.createElement("div", {className: "parallax__layer parallax__layer--back"}), 
+                  React.createElement("div", {className: "parallax__layer parallax__layer--base"}, 
+
+                    React.createElement("div", {id: "section-two"}, 
+
+                      React.createElement("article", {className: "signup-icons"}, 
+
+                        React.createElement("div", null, 
+
+                          React.createElement("img", {src: "images/pencil2.png"}), 
+                          React.createElement("p", null, "Create your own Gallery")
+
+                        ), 
+
+                        React.createElement("span", null), 
+                        React.createElement("div", null, 
+                          React.createElement("img", {src: "images/coin.png"}), 
+                          React.createElement("p", null, "Sell your artworks")
+                        ), 
+                        React.createElement("span", null), 
+                        React.createElement("div", null, 
+                          React.createElement("img", {src: "images/happy.png"}), 
+                          React.createElement("p", null, "Get paid discovering art")
+                        ), 
+                        React.createElement("div", null, 
+                          React.createElement("img", {src: "images/users.png"}), 
+                          React.createElement("p", null, "A global community")
+                        ), 
+                        React.createElement("span", null), 
+                        React.createElement("div", null, 
+                          React.createElement("img", {src: "images/volume-high.png"}), 
+                          React.createElement("p", null, "Democratized visibility")
+                        ), 
+                        React.createElement("span", null), 
+                        React.createElement("div", null, 
+                          React.createElement("img", {src: "images/loop.png"}), 
+                          React.createElement("p", null, "Best commission ever")
+                        )
+
+                      )
+
+                    ), 
+                    React.createElement("div", {className: "below-article"}, 
+                      React.createElement("strong", null, "The artistic community you were waiting for")
+                    )
+                  )
+
+
+                )
+              )
+            )
+
+            );
+      }
+    });
+
+module.exports = Signup;
+},{"./../../actions/actions.js":2,"./../../utilities/login/facebookLogin.js":39,"./../Footer/Footer.js":7,"./signup-phones.css":20,"./signup.css":21}],23:[function(require,module,exports){
+var css = ".top-nav{\r\n\r\n  width: 98%;\r\n  display: block;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  background: white;\r\n  \r\n}\r\n\r\n.top-nav .tabs:active{\r\n\t\r\n\tcolor: tomato;\r\n\tbox-shadow: inset 0px -5px blue;\r\n    -webkit-transition: all 0.15s linear;\r\n\ttransition: all 0.15s linear;\r\n\t\r\n}\r\n\r\n.top-nav .tabs:focus{\r\n\tcolor: tomato;\r\n\tbox-shadow: inset 0px -5px tomato;\r\n\r\n}\r\n\r\n.top-nav .top-logo-holder{\r\n  width: 50px;\r\n  height:50px;\r\n  \r\n}\r\n\r\n.top-nav .navbar{\r\n  background: white;\r\n  border: none;\r\n}\r\n\r\n.top-nav .search{\r\n\r\n  border: none;\r\n  outline: none;\r\n  box-shadow: 0 0 0 0 white;\r\n  \r\n}\r\n\r\n.top-nav .search-gl{\r\n  background: white;\r\n  border:none;\r\n  outline: none;\r\n}\r\n\r\n.top-nav .search-box{\r\n\r\n  overflow:hidden; \r\n \r\n}\r\n\r\n.top-nav .top-drop, .top-nav .top-drop:active{\r\n  \r\n  background: inherit;\r\n   \r\n}\r\n\r\n.top-nav .top-drop:hover{\r\n  background: #d1ccca;\r\n}\r\n\r\n.top-nav .userAvatar {\r\n  height: 1.45em;\r\n  width: 1.45em;\r\n  position:relative;\r\n  box-shadow: 0 0 4px 1px #eee;\r\n  display:cover;\r\n  overflow: hidden;\r\n  border-radius:50%;\r\n}\r\n\r\n.top-nav .userAvatar img{\r\n  position:relative;\r\n  margin-right:2px;\r\n  width:100%;\r\n}\r\n\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],24:[function(require,module,exports){
 'use strict';
 
 
@@ -615,7 +1045,7 @@ var Router = window.ReactRouter,
 
 require('./TopNav.css');
 	
-var TopNav = React.createClass({displayName: 'TopNav',
+var TopNav = React.createClass({displayName: "TopNav",
 
   render: function(){
   
@@ -624,8 +1054,8 @@ var TopNav = React.createClass({displayName: 'TopNav',
 	  React.createElement("div", {className: "row top-nav"}, 
 		React.createElement("nav", {className: "navbar navbar-default", role: "navigation"}, 
 		  React.createElement("div", {className: "navbar-header"}, 
-			React.createElement("button", {type: "button", className: "navbar-toggle", 'data-toggle': "collapse", 
-			  'data-target': "#af-navbar-collapse-1"}, 
+			React.createElement("button", {type: "button", className: "navbar-toggle", "data-toggle": "collapse", 
+			  "data-target": "#af-navbar-collapse-1"}, 
 			  React.createElement("span", {className: "sr-only"}, "Navigate"), 
 			  React.createElement("span", {className: "icon-bar"}), 
 			  React.createElement("span", {className: "icon-bar"}), 
@@ -633,7 +1063,7 @@ var TopNav = React.createClass({displayName: 'TopNav',
 			), 
 			React.createElement("img", {className: "top-logo-holder", src: "images/logo_+_256.png"})
 		  ), 
-		  React.createElement("div", {ref: "collapsible", 'data-toggle': "false", className: "collapse navbar-collapse", id: "af-navbar-collapse-1"}, 
+		  React.createElement("div", {ref: "collapsible", "data-toggle": "false", className: "collapse navbar-collapse", id: "af-navbar-collapse-1"}, 
 			React.createElement("ul", {className: "nav navbar-nav search-wrapper"}, 
 			  React.createElement("li", {className: "active search-box"}, 
 				React.createElement("form", {className: "navbar-form navar-left", role: "search"}, 
@@ -641,14 +1071,14 @@ var TopNav = React.createClass({displayName: 'TopNav',
 				  React.createElement("div", {className: "form-group"}, 
 					React.createElement("div", {className: "input-group"}, 
 					  React.createElement("input", {type: "text", className: "search form-control", placeholder: "Search"}), 
-					  React.createElement("span", {className: "search-gl input-group-addon glyphicon glyphicon-search"})
+					  React.createElement("span", {className: "btn search-gl input-group-addon glyphicon glyphicon-search"})
 					)
 				  )
 				 
 				)
 			  ), 		  
 			  React.createElement("li", {className: "dropdown"}, 
-				React.createElement("a", {href: "#", className: "top-drop dropdown-toggle", 'data-toggle': "dropdown"}, 
+				React.createElement("a", {href: "#", className: "top-drop dropdown-toggle", "data-toggle": "dropdown"}, 
 				  React.createElement("span", {className: "glyphicon glyphicon-align-justify"})
 				), 
 				React.createElement("ul", {className: "dropdown-menu"}, 
@@ -662,7 +1092,7 @@ var TopNav = React.createClass({displayName: 'TopNav',
 				)
 			  ), 
 			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "browsecollections"}, "Browse")), 
-			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "collections"}, "Collections")), 
+			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "photocollections"}, "Collections")), 
 			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "marketplace"}, "Marketplace"))
 			  
 			), 
@@ -671,7 +1101,7 @@ var TopNav = React.createClass({displayName: 'TopNav',
 			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "mygallery"}, "My Gallery")), 
 			  React.createElement("li", null, React.createElement(Link, {className: "tabs", to: "mymarketplace"}, "My Marketplace")), 
 			  React.createElement("li", {className: "dropdown"}, 
-				React.createElement("a", {href: "#", className: "top-drop dropdown-toggle", 'data-toggle': "dropdown"}, 
+				React.createElement("a", {href: "#", className: "top-drop dropdown-toggle", "data-toggle": "dropdown"}, 
 				  
 				  React.createElement("div", {className: "userAvatar"}, 
 				    React.createElement("img", {src: "images/dogs.png", className: ""})
@@ -700,175 +1130,278 @@ var TopNav = React.createClass({displayName: 'TopNav',
 });
 
 module.exports = TopNav;
-},{"./TopNav.css":13}],15:[function(require,module,exports){
-var css = ".browseCollections .tomato-button{\r\n\r\n  border-radius: 15px;\r\n  background: white;\r\n  border: tomato 2px solid;\r\n  color: tomato;\r\n  \r\n}\r\n\r\n.browseCollections .sort{\r\n  padding-left: 15px;\r\n  padding-right: 15px;\r\n  \r\n}\r\n\r\n.browseCollections .sorter{\r\n\r\n  position:relative;\r\n  display:block;\r\n  width:100%;\r\n  height:1.5em;\r\n  \r\n}\r\n\r\n.browseCollections .sorter div{\r\n  position:absolute;\r\n  right: 2.5em;\r\n}\r\n\r\n.browseCollections .list{\r\n  \r\n  width:100%;\r\n  margin:0;\r\n  padding:0;\r\n  margin-bottom: 3em;\r\n  \r\n}\r\n\r\n.browseCollections .browse-images{\r\n  position: relative;\r\n  text-align:right;\r\n  list-style:none;\r\n  width: 100%;\r\n  margin:0;\r\n  padding:0;\r\n  margin-top:5px;\r\n}\r\n\r\n\r\n\t\t  \r\n.browseCollections .notfocused{ \r\n  color:slategray;\r\n  cursor:pointer;\r\n  -webkit-transition: color .4s ease;\r\n          transition: color .4s ease;\r\n}\r\n\r\n.browseCollections .focused{\r\n  cursor:pointer;\r\n  color:tomato;\r\n  text-decoration:none;\r\n  -webkit-transition: color .4s linear;\r\n          transition: color .4s linear;\r\n}\r\n\r\n\r\n.browse-categories-dt{\r\n  position:relative;\r\n  top:2em;\r\n}\r\n\r\n.browse-sort{\r\n  position:relative;\r\n}\r\n\r\n\r\n.browse-categories{\r\n  display: none;\r\n}\r\n"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],16:[function(require,module,exports){
+},{"./TopNav.css":23}],25:[function(require,module,exports){
+var css = ".route-header{\r\n  position:absolute;\r\n  height:60px;\r\n  background: black;\r\n  padding:1em;\r\n  width:100%;\r\n  left:0;\r\n  top:0;\r\n}\r\n\r\n.views{\r\n\r\n  position:absolute;\r\n  top: 60px;\r\n  width:100%;\r\n  left:0;\r\n\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],26:[function(require,module,exports){
+'use strict';
+
+var store = require('./../stores/store.js'),
+    Actions = require('./../actions/actions.js'),
+    Flux = require('delorean').Flux;
+
+var Router = window.ReactRouter,
+    Link = Router.Link,
+    RouteHandler = Router.RouteHandler;
+
+require('./app.css');
+
+var App = React.createClass({displayName: "App",
+
+  getDefaultProps: function () {
+    return {data: store.store.data }
+  },
+
+  componentWillMount: function () {
+
+    var url = 'photos.json';
+    Actions.fetchUserPhotos(url);
+    var featureUrl = 'featuredCollections.json';
+    Actions.fetchFeaturedCollections(featureUrl);
+    var artLoverUrl = 'artLoverCollections.json';
+    Actions.fetchArtLoverCollections(artLoverUrl);
+
+  },
+
+  mixins: [Flux.mixins.storeListener],
+
+  storeDidChange: function (Store) {
+    //alert(JSON.stringify(store.store.data));
+    this.props.data = store.store.data;
+  },
+
+  render: function () {
+    return (
+        React.createElement("div", {className: "routeHandler route-header"}, 
+          React.createElement("div", {className: "btn-group"}, 
+            React.createElement("button", {type: "button", className: "btn btn-default dropdown-toggle primary", "data-toggle": "dropdown"}, 
+            "Components", 
+              React.createElement("span", {className: "caret"})
+            ), 
+            React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "welcome"}, "Welcome")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "user-profile"}, "user profile")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "topnav"}, "topnav")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "signup"}, "signup")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "browsecollections"}, "browse collections")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "footer"}, "footer")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "masonry"}, "masonry")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "parallaxpage"}, "Parallax")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "paddedunderline"}, "PaddedUnderline")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "photocollections"}, "PhotoCollections")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "lightbox"}, "Lightbox")
+              ), 
+              React.createElement("li", null, 
+                React.createElement(Link, {to: "description"}, "Description")
+              )
+            )
+          ), 
+          React.createElement("div", {className: "views"}, 
+            React.createElement(RouteHandler, React.__spread({},   this.props.data))
+          )
+        )
+        );
+  }
+});
+
+module.exports = App;
+},{"./../actions/actions.js":2,"./../stores/store.js":38,"./app.css":25,"delorean":51}],27:[function(require,module,exports){
+var css = ".browseCollections .tomato-button{\r\n\r\n  border-radius: 15px;\r\n  background: white;\r\n  border: tomato 2px solid;\r\n  color: tomato;\r\n  \r\n}\r\n\r\n.browseCollections .sort{\r\n  padding-left: 15px;\r\n  padding-right: 15px;\r\n  \r\n}\r\n\r\n.browseCollections .sorter{\r\n\r\n  position:relative;\r\n  display:block;\r\n  width:100%;\r\n  height:1.5em;\r\n  \r\n}\r\n\r\n.browseCollections .sorter div{\r\n  position:absolute;\r\n  right: 2.5em;\r\n}\r\n\r\n.browseCollections .list{\r\n  \r\n  width:100%;\r\n  margin:0;\r\n  padding:0;\r\n  margin-bottom: 3em;\r\n  \r\n}\r\n\r\n.browseCollections .browse-images{\r\n  position: relative;\r\n  text-align:right;\r\n  list-style:none;\r\n  width: 100%;\r\n  margin:0;\r\n  padding:0;\r\n  margin-top:5px;\r\n}\r\n\r\n\t\t  \r\n.browseCollections .notfocused{ \r\n  color:slategray;\r\n  cursor:pointer;\r\n  -webkit-transition: color .4s ease;\r\n          transition: color .4s ease;\r\n}\r\n\r\n.browseCollections .focused{\r\n  cursor:pointer;\r\n  color:tomato;\r\n  text-decoration:none;\r\n  -webkit-transition: color .4s linear;\r\n          transition: color .4s linear;\r\n}\r\n\r\n\r\n.browse-categories-dt{\r\n  position:relative;\r\n  top:2em;\r\n}\r\n\r\n.browse-sort{\r\n  position:relative;\r\n}\r\n\r\n\r\n.browse-categories{\r\n  display: none;\r\n}\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],28:[function(require,module,exports){
 'use strict'
 
 
 var TopNav = React.createFactory(require('./../TopNav/TopNav.js')),
     Masonry = require('./../masonry/masonry.js');
-	
+
 require('./BrowseCollections.css');
 require('./phones.css');
 
 
-var BrowseCollections = React.createClass({displayName: 'BrowseCollections',
+var BrowseCollections = React.createClass({displayName: "BrowseCollections",
 
   propTypes: {
     //todo add proptypes
   },
 
-  getInitialState: function(){
-  
+  getInitialState: function () {
+
     return ({
-	  //need to highlight the category the user clicks
-	  focusedOn: 0,
-	  
-	});
-	
+      //need to highlight the category the user clicks
+      focusedOn: 0
+
+    });
+
   },
-  
-  getDefaultProps: function(){
-  
+
+  getDefaultProps: function () {
+
     return {
-	  category: ['Categories', 'All Art', 'Applied Art', 'Digital Art', 'Original', 'Literature', 'Performing Art', 'Public Art', 'Music', 'Visual Art', 'Collage', 'Film/Video', 'Painting', 'Photography', 'Printmaking', 'Sculpture', 'Work on Paper', 'Work on Materials', 'Other Visual Art', 'Other Art'],
-	  sortingList: ['Recent', 'Most Curated', 'Most Viewed', 'Most Followed', 'Undiscovered', 'Oldest']
-	};
-  
+      category: ['Categories', 'All Art', 'Applied Art', 'Digital Art',
+        'Original', 'Literature', 'Performing Art', 'Public Art',
+        'Music', 'Visual Art', 'Collage', 'Film/Video', 'Painting',
+        'Photography', 'Printmaking', 'Sculpture', 'Work on Paper',
+        'Work on Materials', 'Other Visual Art', 'Other Art'],
+      sortingList: ['Recent', 'Most Curated', 'Most Viewed',
+        'Most Followed', 'Undiscovered', 'Oldest']
+    };
+
   },
-  
+
   //todo - change to category click
-  handleClick: function(i,e){
-        
-	var domNode = this.getDOMNode();
-	
-	//what got clicked
-	var elem = domNode.querySelectorAll('.browse-images')[i],
-	    
-		//get the category associated with category clicked
-		tag = $(elem).data('expression'),
-	    self = this,
-		newImages = ['images/picasso.png','images/egon.jpg','images/dogs.png', 'images/egon_land.jpg', 'images/flowers_big.jpg','images/Logo_+_vector.png'],
-		images = [],
-		url;			
-   
-	//can use flickr for dummy data
-	//url = 'http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?';
-	
-	
-	//todo: abstract this
-	//fetch data
-	$.getJSON(url,{
-	  tags: tag,
-	  tagmode: 'any',
-	  format: 'json'
-	}).done(function(data){
-	  $.each( data.items, function( i,item ){
-	    newImages.push(item.media.m);
-		if (i === 13){
-		  return false;
-		}
-	  });
-	}).always( function(){
-	
- 	  self.setState({
-	    images:newImages,
-		focusedOn:i
-	  });	  
-	  	  
-	});
+  handleClick: function (i, e) {
+
+    var domNode = this.getDOMNode();
+
+    //what got clicked
+    var elem = domNode.querySelectorAll('.browse-images')[i],
+
+    //get the category associated with category clicked
+        tag = $(elem).data('expression'),
+        self = this,
+        newImages = ['images/picasso.png', 'images/egon.jpg',
+          'images/dogs.png', 'images/egon_land.jpg',
+          'images/flowers_big.jpg', 'images/Logo_+_vector.png'],
+        images = [],
+        url;
+
+    //can use flickr for dummy data
+    //url = 'http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?';
+
+
+    //todo: abstract this
+    //fetch data
+    $.getJSON(url, {
+      tags: tag,
+      tagmode: 'any',
+      format: 'json'
+    }).done(function (data) {
+      $.each(data.items, function (i, item) {
+        newImages.push(item.media.m);
+        if (i === 13) {
+          return false;
+        }
+      });
+    }).always(function () {
+
+      self.setState({
+        images: newImages,
+        focusedOn: i
+      });
+
+    });
+  },
+
+  handleSort: function (i) {
+
+    var domNode = this.getDOMNode();
+
+    var elem = domNode.querySelectorAll('.sortingList')[i],
+        tag = $(elem).data('expression');
+    alert(tag);
 
   },
-  
-  handleSort: function(i){
-    
-	var domNode = this.getDOMNode();
 
-	var elem = domNode.querySelectorAll('.sortingList')[i],
-	    tag = $(elem).data('expression');
-		alert(tag);
-	
-  },
-  
-  render: function(){
-  
+  render: function () {
+
     var self = this;
-	var categories = this.props.category.map( function(items,i) {	
-	  var f;
-	  if(i == self.state.focusedOn){
-	    f = 'focused';
-	  }
-	  else{
-	    f = 'notfocused';
-	  }
-	  return (
-	    React.createElement("li", {ref: "cat", 'data-expression': items, className: "browse-images"}, 
-		  React.createElement("p", {ref: "category", 
-		    onClick: self.handleClick.bind(self,i), 
-			key: i, 
-			className: f, 
+    var categories = this.props.category.map(function (items, i) {
+      var f;
+      if (i == self.state.focusedOn) {
+        f = 'focused';
+      }
+      else {
+        f = 'notfocused';
+      }
+      return (
+          React.createElement("li", {ref: "cat", "data-expression": items, className: "browse-images"}, 
+            React.createElement("p", {ref: "category", 
+            onClick: self.handleClick.bind(self, i), 
+            key: i, 
+            className: f, 
             href: "#"}, 
 			items
-		  )
-		)	
-	  );
-	});
-	
-	var sortingList = this.props.sortingList.map( function(items,i) {	
-	  
-	  return (
-	 	React.createElement("li", {'data-expression': items, onClick: self.handleSort.bind(self,i), className: "sortingList"}, 
-		  React.createElement("a", {ref: "sort", 
-			 key: i, 
-			 href: "#"}, 
+            )
+          )
+          );
+    });
+
+    var sortingList = this.props.sortingList.map(function (items, i) {
+
+      return (
+          React.createElement("li", {"data-expression": items, onClick: self.handleSort.bind(self,
+              i), className: "sortingList"}, 
+            React.createElement("a", {ref: "sort", 
+            key: i, 
+            href: "#"}, 
 			 items
-		  )
-		)
-	  );
-	});
-	
+            )
+          )
+          );
+    });
+
     return (
-	  React.createElement("div", {className: "browseCollections"}, 
-     	React.createElement(TopNav, null), 
-		  React.createElement("div", {className: "container"}, 
+        React.createElement("div", {className: "browseCollections"}, 
+          React.createElement(TopNav, null), 
+          React.createElement("div", {className: "container"}, 
             React.createElement("div", {className: "row"}, 
               React.createElement("div", {className: "col-xs-4"}), 
-			   React.createElement("div", {className: "col-xs-8"}, 
-				React.createElement("div", {className: "btn-group browse-categories"}, 
-				  React.createElement("button", {className: "btn btn-default dropdown-toggle tomato-button", 'data-toggle': "dropdown"}, 
-			        React.createElement("span", {className: "sort"}, "Browse"), 
-					React.createElement("span", {className: "caret"})
-			      ), 
-				  React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
+              React.createElement("div", {className: "col-xs-8"}, 
+                React.createElement("div", {className: "btn-group browse-categories"}, 
+                  React.createElement("button", {className: "btn btn-default dropdown-toggle tomato-button", "data-toggle": "dropdown"}, 
+                    React.createElement("span", {className: "sort"}, "Browse"), 
+                    React.createElement("span", {className: "caret"})
+                  ), 
+                  React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
 				    categories
-				  )
-				), 
-				React.createElement("div", {className: "sorter"}, 
-				    React.createElement("div", {className: "btn-group"}, 
-			          React.createElement("button", {className: "btn btn-default dropdown-toggle tomato-button", 'data-toggle': "dropdown"}, 
-			            React.createElement("span", {className: "sort"}, "sort"), " ", React.createElement("span", {className: "caret"})
-			          ), 
-				      React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
-			            sortingList
-		              )
-				    )
-			      )
+                  )
                 ), 
-			    React.createElement("div", {className: "col-xs-4 col-md-2"}, 
-				  React.createElement("ul", {className: "list browse-categories-dt"}, 
+                React.createElement("div", {className: "sorter"}, 
+                  React.createElement("div", {className: "btn-group"}, 
+                    React.createElement("button", {className: "btn btn-default dropdown-toggle tomato-button", "data-toggle": "dropdown"}, 
+                      React.createElement("span", {className: "sort"}, "sort"), 
+                      React.createElement("span", {className: "caret"})
+                    ), 
+                    React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
+			            sortingList
+                    )
+                  )
+                )
+              ), 
+              React.createElement("div", {className: "col-xs-4 col-md-2"}, 
+                React.createElement("ul", {className: "list browse-categories-dt"}, 
 			        categories
-				  )
-			    ), 
-			    React.createElement("div", {className: "col-xs-12 col-md-10"}, 
-			      React.createElement(Masonry, React.__spread({},   this.props))
-			    )
-		      )/*end row*/
-		    )		  
-		)		
-		
-	);
-  
+                )
+              ), 
+              React.createElement("div", {className: "col-xs-12 col-md-10"}, 
+                React.createElement(Masonry, React.__spread({},   this.props))
+              )
+            )/*end row*/
+          )
+        )
+
+        );
+
   }
 
 });
@@ -876,16 +1409,13 @@ var BrowseCollections = React.createClass({displayName: 'BrowseCollections',
 module.exports = BrowseCollections;
 
 
-
-},{"./../TopNav/TopNav.js":14,"./../masonry/masonry.js":23,"./BrowseCollections.css":15,"./phones.css":17}],17:[function(require,module,exports){
-var css = "@media (max-width:986px){\r\n\r\n.browse-categories{\r\n  display: block;\r\n  position:absolute;\r\n  right:11em;\r\n  z-index:9999;\r\n}\r\n\r\n.browse-categories  ul{\r\n\r\n  height:300px;\r\n  overflow:auto;\r\n\r\n}\r\n\r\n.browse-categories-dt{\r\n  display:none;\r\n}\r\n\r\n\r\n.notfocused{\r\n  text-align: left;\r\n  margin:1em; \r\n}\r\n\r\n.focused{\r\n  text-align:left;\r\n  margin:1em;\r\n}\r\n\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],18:[function(require,module,exports){
-module.exports=require(3)
-},{"C:\\Users\\Justin\\documents\\github\\af\\app\\scripts\\components\\Footer\\footer.css":3,"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],19:[function(require,module,exports){
-module.exports=require(2)
-},{"./footer.css":18,"C:\\Users\\Justin\\documents\\github\\af\\app\\scripts\\components\\Footer\\Footer.js":2}],20:[function(require,module,exports){
-var css = ".browsehappy {\r\n  margin: 0.2em 0;\r\n  background: #ccc;\r\n  color: #000;\r\n  padding: 0.2em 0;\r\n}\r\n\r\n@font-face {\r\n  font-family: 'Open-Sans-600';\r\n  src: url(fonts/Open-Sans-600.ttf);\r\n}\r\n\r\n@font-face {\r\n  font-family: 'Open-Sans-300';\r\n  src: url(fonts/Open-Sans-300.ttf);\r\n}\r\n\r\n@font-face {\r\n  font-family: 'Open-Sans-regular';\r\n  src: url(fonts/Open-Sans-regular.ttf);\r\n}\r\n\t\r\n\r\nbody{\r\n  margin:0;\r\n  padding:0;\r\n  font-family: 'Open-Sans-600';\t\r\n  -webkit-font-smoothing: antialiased;\r\n}\r\n\r\n.user-profile{\r\n  width:100%;\r\n  position:absolute;\r\n  top:1em;\r\n  left:0;\r\n}\r\n\r\n.padding1{\r\n  padding: 1em;  \r\n}\r\n\r\n.fluid{\r\n  width: 100%;\r\n}\r\n\r\n.center-block {\r\n  display: block;\r\n  margin-left: auto;\r\n  margin-right: auto;\r\n}\r\n\r\n.vertical-align{\r\n   vertical-align:middle;\r\n}\r\n\r\n\r\n.route-header{\r\n  position:absolute;\r\n  height:100px;\r\n  background: #eee;\r\n  padding:1em;\r\n  width:100%;\r\n  left:0;\r\n  top:0;\r\n}\r\n\r\n.views{\r\n\r\n  position:absolute;\r\n  top: 100px;\r\n  width:100%;\r\n  left:0;\r\n\r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],21:[function(require,module,exports){
+},{"./../TopNav/TopNav.js":24,"./../masonry/masonry.js":34,"./BrowseCollections.css":27,"./phones.css":29}],29:[function(require,module,exports){
+var css = "@media (max-width:986px){\r\n\r\n.browse-categories{\r\n  display: block;\r\n  position:absolute;\r\n  right:11em;\r\n  z-index:9999;\r\n}\r\n\r\n.browse-categories  ul{\r\n\r\n  height:300px;\r\n  overflow:auto;\r\n\r\n}\r\n\r\n.browse-categories-dt{\r\n  display:none;\r\n}\r\n\r\n\r\n.notfocused{\r\n  text-align: left;\r\n  margin:1em; \r\n}\r\n\r\n.focused{\r\n  text-align:left;\r\n  margin:1em;\r\n}\r\n\r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],30:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40,"dup":8}],31:[function(require,module,exports){
+arguments[4][7][0].apply(exports,arguments)
+},{"./footer.css":30,"dup":7}],32:[function(require,module,exports){
 'use strict';
 
 var UserProfile = React.createFactory(require('./user-profile/user-profile.js')),
@@ -895,14 +1425,13 @@ var UserProfile = React.createFactory(require('./user-profile/user-profile.js'))
     Footer = React.createFactory(require('./footer/footer.js')),
     Masonry = React.createFactory(require('./masonry/masonry.js')),
     ParallaxPage = React.createFactory(require('./ParallaxPage/ParallaxPage.js')),
-    PaddedUnderline = React.createFactory(require('./PaddedUnderline/PaddedUnderline.js'));
-   
-   
-	
-var store = require('./../stores/store.js'),
-    Dispatcher = require('./../dispatcher.js'),
-    Actions = require('./../actions/actions.js'),
-    Flux = require('delorean').Flux;  
+    PaddedUnderline = React.createFactory(require('./PaddedUnderline/PaddedUnderline.js')),
+    PhotoCollections = React.createFactory(require('./PhotoCollections/PhotoCollections.js')),
+	Lightbox = React.createFactory(require('./Lightbox/Lightbox.js')),
+	Description = React.createFactory(require('./Description/Description.js')),
+    App = React.createFactory(require('./app.js'));
+
+var	Dispatcher = require('./../dispatcher.js');
 	
 var Router = window.ReactRouter,
     Route = Router.Route,
@@ -912,21 +1441,8 @@ var Router = window.ReactRouter,
     NotFoundRoute = Router.NotFoundRoute, 
 	RouteHandler = Router.RouteHandler;
 	
-	
-require('./main.css');
 
-
-//better to render to a container or to document.html?	
-
-/*React.render (
-  <UserProfile></UserProfile>,
-  document.getElementById('container')
-);*/
-
-
-// Make Welcome and NotFound(404) separate components
-
-var Welcome = React.createClass({displayName: 'Welcome',
+var Welcome = React.createClass({displayName: "Welcome",
   render: function() {
     return (
 	  React.createElement("div", {className: "routeHandler"}, 
@@ -937,81 +1453,42 @@ var Welcome = React.createClass({displayName: 'Welcome',
 });
 
 
-var NotFound = React.createClass({displayName: 'NotFound',
+var NotFound = React.createClass({displayName: "NotFound",
   render: function() {
     return React.createElement("h2", null, "NotFound");
   }
 });
 
-var About = React.createClass({displayName: 'About',
+var About = React.createClass({displayName: "About",
   render: function() {
     return React.createElement("h2", null, "About");
   }
 });
 
-var Collections = React.createClass({displayName: 'Collections',
+var Collections = React.createClass({displayName: "Collections",
   render: function() {
     return React.createElement("h2", null, "Collections");
   }
 });
 
-var Marketplace = React.createClass({displayName: 'Marketplace',
+var Marketplace = React.createClass({displayName: "Marketplace",
   render: function() {
     return React.createElement("h2", null, "Marketplace");
   }
 });
 
-var MyGallery = React.createClass({displayName: 'MyGallery',
+var MyGallery = React.createClass({displayName: "MyGallery",
   render: function() {
     return React.createElement("h2", null, "Marketplace");
   }
 });
 
-var MyMarketplace = React.createClass({displayName: 'MyMarketplace',
+var MyMarketplace = React.createClass({displayName: "MyMarketplace",
   render: function() {
     return React.createElement("h2", null, "Marketplace");
   }
 });
 
-var App = React.createClass({displayName: 'App',
-  
-  getDefaultProps: function(){
-    return {data: store.store.data }
-  },
-  
-  componentWillMount: function() {
-  
-    var url = 'photos.json';
-    Actions.fetchUserPhotos(url);
-  
-  },
-  
-  mixins: [Flux.mixins.storeListener],
-  
-  storeDidChange: function(Store){
-    //alert(JSON.stringify(store.store.data));
-	this.props.data = store.store.data;
-  },
-  
-  render: function() {
-    return (
-	  React.createElement("div", {className: "routeHandler route-header"}, 
-	    React.createElement(Link, {to: "welcome"}, React.createElement("button", null, "Welcome")), 
-	    React.createElement(Link, {to: "user-profile"}, React.createElement("button", null, "user profile")), 
-	    React.createElement(Link, {to: "topnav"}, React.createElement("button", null, "topnav")), 
-	    React.createElement(Link, {to: "signup"}, React.createElement("button", null, "signup")), 
-	    React.createElement(Link, {to: "browsecollections"}, React.createElement("button", null, "browse collections")), 
-	    React.createElement(Link, {to: "footer"}, React.createElement("button", null, "footer")), 
-	    React.createElement(Link, {to: "masonry"}, React.createElement("button", null, "masonry")), 
-	    React.createElement(Link, {to: "parallaxpage"}, React.createElement("button", null, "Parallax")), 
-	    React.createElement(Link, {to: "paddedunderline"}, React.createElement("button", null, "PaddedUnderline")), 
- 	    React.createElement("div", {className: "views"}, 
-		  React.createElement(RouteHandler, React.__spread({},   this.props.data))
-	    )
-	  )
-	);
-  }
-});
 
 var routes = (
   React.createElement(Route, {handler: App, path: "/"}, 
@@ -1025,10 +1502,13 @@ var routes = (
     React.createElement(Route, {path: "/masonry", name: "masonry", handler: Masonry}), 
     React.createElement(Route, {path: "/parallaxpage", name: "parallaxpage", handler: ParallaxPage}), 
     React.createElement(Route, {path: "/paddedunderline", name: "paddedunderline", handler: PaddedUnderline}), 
+    React.createElement(Route, {path: "/photocollections", name: "photocollections", handler: PhotoCollections}), 
     React.createElement(Route, {path: "/collections", name: "collections", handler: Collections}), 
     React.createElement(Route, {path: "/marketplace", name: "marketplace", handler: Marketplace}), 
     React.createElement(Route, {path: "/mygallery", name: "mygallery", handler: MyGallery}), 
     React.createElement(Route, {path: "/mymarketplace", name: "mymarketplace", handler: MyMarketplace}), 
+    React.createElement(Route, {path: "/lightbox", name: "lightbox", handler: Lightbox}), 
+    React.createElement(Route, {path: "/description", name: "description", handler: Description}), 
 	React.createElement(NotFoundRoute, {handler: NotFound}), 
 	React.createElement(DefaultRoute, {handler: Welcome, pageTitle: "Home"})
   )
@@ -1043,9 +1523,9 @@ Router.run(routes, Router.HistoryLocation, function (Handler,state) {
 
 
 
-},{"./../actions/actions.js":1,"./../dispatcher.js":26,"./../stores/store.js":27,"./PaddedUnderline/PaddedUnderline.js":7,"./ParallaxPage/ParallaxPage.js":9,"./Signup/signup.js":12,"./TopNav/TopNav.js":14,"./browse-collections/browse-collections.js":16,"./footer/footer.js":19,"./main.css":20,"./masonry/masonry.js":23,"./user-profile/user-profile.js":25,"delorean":40}],22:[function(require,module,exports){
-var css = "#transition-in{\r\n  transition: opacity 1s ease;\r\n  transition: transform .5s ease;\r\n  -webkit-transform: scale(1);\r\n  opacity: 1;\r\n   \r\n}\r\n#transition-out {\r\n  transition: opacity 1s ease;\r\n  transition: transform .5s ease;\r\n  -webkit-transform: scale(1) translateX(1000px);\r\n  opacity: .9;\r\n}\r\n\r\n#transition-middle {\r\n\r\n  transition: opacity: .1s ease;\r\n  transition: transform: .1s ease;\r\n  -webkit-transform: scale(0) translateX(0px);\r\n  opacity: .5;\r\n\r\n}\r\n\r\n@keyframes appear {\r\n  from {opacity: 0; transform: scale(.8);}\r\n  to {opacity: 1; transform: scale(1)}\r\n}\r\n\r\n@keyframes disappear {\r\n  from {opacity: 1; transform: scale(1);}\r\n  to {opacity: 0; transform: scale(.9) rotateX(0deg) translateZ(-1500px);}\r\n}\r\n\r\n.masonry-gallery{\r\n  perspective: 1500px;\r\n  overflow: hidden;\r\n}\r\n\r\n.masonries .item{ \r\n  width: 32%;\r\n  margin:.5%;  \r\n}\r\n\r\n.masonries .item img{\r\n  box-shadow: 0 0 4px 1px rgba(10,30,10,0.4);\r\n}\r\n\r\n.masonry{\r\n\r\n  width:90%;\r\n  left:2.25em;\r\n  height:100%;\r\n  position:relative;\r\n  margin-top:2.25em;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n \r\n}\r\n\r\n@media (max-width:980px){\r\n  .masonry{\r\n    left:0;\r\n  }\r\n}\r\n\r\n.masonries{\r\n \r\n  position:relative;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  position:relative;\r\n  height:100%;\r\n  width: 100%;\r\n    \r\n}"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],23:[function(require,module,exports){
+},{"./../dispatcher.js":37,"./Description/Description.js":6,"./Lightbox/Lightbox.js":12,"./PaddedUnderline/PaddedUnderline.js":14,"./ParallaxPage/ParallaxPage.js":16,"./PhotoCollections/PhotoCollections.js":17,"./Signup/signup.js":22,"./TopNav/TopNav.js":24,"./app.js":26,"./browse-collections/browse-collections.js":28,"./footer/footer.js":31,"./masonry/masonry.js":34,"./user-profile/user-profile.js":36}],33:[function(require,module,exports){
+var css = "#transition-in{\r\n  transition: opacity 1s ease;\r\n  transition: transform .5s ease;\r\n  -webkit-transform: scale(1);\r\n  opacity: 1;\r\n   \r\n}\r\n#transition-out {\r\n  transition: opacity 1s ease;\r\n  transition: transform .5s ease;\r\n  -webkit-transform: scale(1) translateX(1000px);\r\n  opacity: .9;\r\n}\r\n\r\n#transition-middle {\r\n\r\n  transition: opacity: .1s ease;\r\n  transition: transform: .1s ease;\r\n  -webkit-transform: scale(0) translateX(0px);\r\n  opacity: .5;\r\n\r\n}\r\n\r\n@keyframes appear {\r\n  from {opacity: 0; transform: scale(.8);}\r\n  to {opacity: 1; transform: scale(1)}\r\n}\r\n\r\n@keyframes disappear {\r\n  from {opacity: 1; transform: scale(1);}\r\n  to {opacity: 0; transform: scale(.9) rotateX(0deg) translateZ(-1500px);}\r\n}\r\n\r\n.masonry-gallery{\r\n  perspective: 1500px;\r\n  overflow: hidden;\r\n}\r\n\r\n.masonries .item{ \r\n  width: 32%;\r\n  margin:.5%;  \r\n}\r\n\r\n.masonries .item img{\r\n  box-shadow: 0 0 4px 1px rgba(10,30,10,0.4);\r\n}\r\n\r\n.masonry{\r\n\r\n  width:90%;\r\n  left:2.25em;\r\n  height:100%;\r\n  position:relative;\r\n  margin-top:2.25em;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n \r\n}\r\n\r\n@media (max-width:980px){\r\n  .masonry{\r\n    left:0;\r\n  }\r\n}\r\n\r\n.masonries{\r\n \r\n  position:relative;\r\n  margin-left: auto;\r\n  margin-right:auto;\r\n  position:relative;\r\n  height:100%;\r\n  width: 100%;\r\n    \r\n}"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],34:[function(require,module,exports){
 'use strict';
 
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup,
@@ -1057,7 +1537,7 @@ var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup,
 //css
 require('./masonry.css');
 
-var Masonry = React.createClass({displayName: 'Masonry',
+var Masonry = React.createClass({displayName: "Masonry",
  
   componentDidMount: function(){
   
@@ -1121,451 +1601,450 @@ var Masonry = React.createClass({displayName: 'Masonry',
 });
 
 module.exports = Masonry;
-},{"./../ImageOverlay/ImageOverlay.js":4,"./masonry.css":22,"imagesloaded":44,"masonry-layout":47}],24:[function(require,module,exports){
-var css = ".user-profile .underline{\r\n  text-decoration: underline;\r\n}\r\n\r\n.user-profile .container{\r\n  width:100%;\r\n}\r\n\r\n.user-profile-head{\r\n  height: 14em;\r\n  background: purple;\r\n}\r\n\r\n.user-profile-head h1{\r\n\r\n  position: relative;\r\n  top:1.5em;\r\n  width:100%;\r\n  height:7em;\r\n  color: white;\r\n \r\n}\r\n\r\n.user-profile .artist{\r\n  border-radius: 20px;\r\n  padding-left:20px;\r\n  padding-right:20px;\r\n  background: #e56e5c;\r\n  color:white;\r\n}\r\n\r\n.user-profile .photo-circle{\r\n  position:relative;\r\n  top:1em;\r\n  border: solid #eee 4px;\r\n  box-shadow: 0 0 4px 1px white;\r\n  border-radius: 50%;\r\n  width: 3em;\r\n  height: 3em;\r\n  display:block;\r\n  overflow:hidden;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  display:cover;\r\n  background: white;\r\n}\r\n\r\n.user-profile .inner-circle{\r\n  position:absolute;\r\n  z-index:9999;\r\n  width:100%;\r\n  height:100%;\r\n  top: .75em;\r\n}\r\n\r\n.user-profile-bottom{\r\n  position:relative;\r\n  top:300px;\r\n  overflow:hidden;\r\n  background: #3a3a3a;\r\n  color:white;\r\n}\r\n\r\n.user-profile a:visited{\r\n  color: black;\r\n}\r\n\r\n.user-profile-forms{\r\n\r\n  width: 80%;\r\n  top:1em;\r\n\r\n}\r\n\r\n.user-profile .social{\r\n  margin-bottom:4em;\r\n\r\n}\r\n\r\n.user-profile .input-group-addon{\r\n  background: white;\r\n  color: green;\r\n}\r\n\r\n.user-profile .help-block{\r\n  margin-top: -.75em;\r\n}\r\n\r\n.user-profile .help-block button{\r\n  margin-left: 10px;\r\n  border: solid 1px tomato;\r\n  padding: .1em .5em .1em .5em;\r\n}\r\n\r\n.user-profile .social-buttons{\r\n  margin-top: 2.5em;\r\n}\r\n\r\n/*make width wider on wider screens*/\r\n\r\n.user-profile-forms article{\r\n \r\n  margin-top:2em;\r\n  left:0; \r\n  width:100%;\r\n  height: 270px;\r\n \r\n}\r\n\r\n.user-profile .my-account{\r\n  width:80%;\r\n  position:relative;\r\n  top:2em;\r\n}\r\n\r\n\r\n.user-profile .input-group{\r\n\r\n  width:100%;\r\n  padding-top:2px;\r\n  padding-bottom:1em;\r\n\r\n}\r\n\r\n.user-profile .button-wrapper{\r\n  position:relative;\r\n  top:1em;\r\n  width:100px;\r\n}\r\n\r\n\r\n\r\n\r\n/*\r\n * jQuery File Upload Plugin CSS 1.3.0\r\n * https://github.com/blueimp/jQuery-File-Upload\r\n *\r\n * Copyright 2013, Sebastian Tschan\r\n * https://blueimp.net\r\n *\r\n * Licensed under the MIT license:\r\n * http://www.opensource.org/licenses/MIT\r\n */\r\n\r\n.fileinput-button {\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n.fileinput-button input {\r\n  position: absolute;\r\n  top: 0;\r\n  right: 0;\r\n  margin: 0;\r\n  opacity: 0;\r\n  -ms-filter: 'alpha(opacity=0)';\r\n  font-size: 200px;\r\n  direction: ltr;\r\n  cursor: pointer;\r\n}\r\n\r\n/* Fixes for IE < 8 */\r\n@media screen\\9 {\r\n  .fileinput-button input {\r\n    filter: alpha(opacity=0);\r\n    font-size: 100%;\r\n    height: 100%;\r\n  }\r\n}\r\n"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],25:[function(require,module,exports){
-'use strict'
+},{"./../ImageOverlay/ImageOverlay.js":9,"./masonry.css":33,"imagesloaded":55,"masonry-layout":58}],35:[function(require,module,exports){
+var css = ".user-profile .underline{\r\n  text-decoration: underline;\r\n}\r\n\r\n.user-profile .container{\r\n  width:100%;\r\n}\r\n\r\n.user-profile-head{\r\n  height: 14em;\r\n  background: purple;\r\n}\r\n\r\n.user-profile-menu{\r\n  border: solid black 2px;\r\n  \r\n}\r\n\r\n.user-profile .aboutme{ \r\n margin-top:1em;\r\n}\r\n\r\n.user-profile menu{\r\n\r\n//  position:absolute;\r\n  //margin-top:1.5em;\r\n  //margin-left:0;\r\n}\r\n\r\n.user-profile-head h1{\r\n\r\n  position: relative;\r\n  top:1.5em;\r\n  width:100%;\r\n  height:7em;\r\n  color: white;\r\n \r\n}\r\n\r\n.user-profile .artist{\r\n  border-radius: 20px;\r\n  padding-left:20px;\r\n  padding-right:20px;\r\n  background: #e56e5c;\r\n  color:white;\r\n}\r\n\r\n.user-profile .photo-circle{\r\n  position:relative;\r\n  top:1em;\r\n  border: solid #eee 4px;\r\n  box-shadow: 0 0 4px 1px white;\r\n  border-radius: 50%;\r\n  width: 3em;\r\n  height: 3em;\r\n  display:block;\r\n  overflow:hidden;\r\n  margin-left:auto;\r\n  margin-right:auto;\r\n  display:cover;\r\n  background: white;\r\n}\r\n\r\n.user-profile .inner-circle{\r\n  position:absolute;\r\n  z-index:9999;\r\n  width:100%;\r\n  height:100%;\r\n  top: .75em;\r\n}\r\n\r\n.user-profile-bottom{\r\n  position:relative;\r\n  top:300px;\r\n  overflow:hidden;\r\n  background: #3a3a3a;\r\n  color:white;\r\n}\r\n\r\n.user-profile a:visited{\r\n  color: black;\r\n}\r\n\r\n.user-profile-forms{\r\n\r\n  width: 80%;\r\n  top:1em;\r\n\r\n}\r\n\r\n.user-profile .all-social{\r\n  top:2em;\r\n  padding-bottom:2em;\r\n  position:relative;\r\n}\r\n\r\n.user-profile .social{\r\n  margin-bottom:4em;\r\n}\r\n\r\n.user-profile-forms .input-group-addon{\r\n  background: white;\r\n  color: green;\r\n}\r\n\r\n.user-profile .help-block{\r\n  margin-top: -.75em;\r\n  margin-left: 1em;\r\n  font-size:0.88em;\r\n}\r\n\r\n.user-profile .help-block button{\r\n  margin-left: 8px;\r\n  border: solid 1px tomato;\r\n  padding: .1em .5em .1em .5em;\r\n}\r\n\r\n.user-profile .social-buttons{\r\n  margin-top: .5em;\r\n}\r\n\r\n/*make width wider on wider screens*/\r\n\r\n.user-profile-forms article{\r\n \r\n  margin-top:2em;\r\n  left:0; \r\n  width:100%;\r\n  height: 270px;\r\n \r\n}\r\n\r\n\r\n.user-profile .section{\r\n  \r\n  padding-bottom: 1em;\r\n  \r\n}\r\n\r\n.user-profile .my-account{\r\n  width:80%;\r\n  position:relative;\r\n  top:2em;\r\n}\r\n\r\n\r\n.user-profile-forms .input-group{\r\n\r\n  width:100%;\r\n\r\n  padding-top:4px;\r\n  padding-bottom:1em;\r\n\r\n}\r\n\r\n.user-profile .button-wrapper{\r\n  position:relative;\r\n  top:1em;\r\n  width:100px;\r\n}\r\n\r\n\r\n\r\n\r\n/*\r\n * jQuery File Upload Plugin CSS 1.3.0\r\n * https://github.com/blueimp/jQuery-File-Upload\r\n *\r\n * Copyright 2013, Sebastian Tschan\r\n * https://blueimp.net\r\n *\r\n * Licensed under the MIT license:\r\n * http://www.opensource.org/licenses/MIT\r\n */\r\n\r\n.fileinput-button {\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n.fileinput-button input {\r\n  position: absolute;\r\n  top: 0;\r\n  right: 0;\r\n  margin: 0;\r\n  opacity: 0;\r\n  -ms-filter: 'alpha(opacity=0)';\r\n  font-size: 200px;\r\n  direction: ltr;\r\n  cursor: pointer;\r\n}\r\n\r\n/* Fixes for IE < 8 */\r\n@media screen\\9 {\r\n  .fileinput-button input {\r\n    filter: alpha(opacity=0);\r\n    font-size: 100%;\r\n    height: 100%;\r\n  }\r\n}\r\n"; (require("C:\\DEV\\artfactum-frontend\\node_modules\\cssify"))(css); module.exports = css;
+},{"C:\\DEV\\artfactum-frontend\\node_modules\\cssify":40}],36:[function(require,module,exports){
+'use strict';
 
-var Router = window.ReactRouter,
-    Route = Router.Route,
-    Routes = Router.Routes,
-	Link = Router.Link,
-    RouteHandler = Router.RouteHandler;
-	
 var Actions = require('./../../actions/actions.js'),
-	TopNav = require('./../TopNav/TopNav.js'),
-	Footer = require('./../footer/footer.js');
- 
+    TopNav = require('./../TopNav/TopNav.js'),
+    Footer = require('./../footer/footer.js'),
+    PaddedUnderline = require('./../PaddedUnderline/PaddedUnderline.js');
+
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
- 
-require('./user-profile.css');
-require('../../../styles/color-swatch.css');
- 
 
- $.fn.serializeObject = function()
-{
-    var o = {};
-    var a = this.serializeArray();
-    $.each(a, function() {
-        if (o[this.name] !== undefined) {
-            if (!o[this.name].push) {
-                o[this.name] = [o[this.name]];
-            }
-            o[this.name].push(this.value || '');
-        } else {
-            o[this.name] = this.value || '';
+require('./user-profile.css');
+
+$.fn.serializeObject = function () {
+  var o = {};
+  var a = this.serializeArray();
+  $.each(a, function () {
+    if (o[this.name] !== undefined) {
+      if (!o[this.name].push) {
+        o[this.name] = [o[this.name]];
+      }
+      o[this.name].push(this.value || '');
+    }
+    else {
+      o[this.name] = this.value || '';
+    }
+  });
+  return o;
+};
+
+var UserProfile = React.createClass(
+    {displayName: "UserProfile",
+
+      getDefaultProps: function () {
+        return {
+          data: 'data'
         }
-    });
-    return o;
-}; 
- 
-var UserProfile = React.createClass({displayName: 'UserProfile',
-  
-  getDefaultProps: function(){
-    return {
-	  data: 'data'
-	}
-  },
-  
-  getInitialState: function(){
-    return { 
-	  username: 'user profile'
-	} 
-  },
-  
-  componentDidMount: function(){
-    	
-	// Change this to the location of your server-side upload handler:
-    var url = '',
-	elem = $('#fileupload');
-	Actions.fileUpload(elem,url);
-	var domNode = this.getDOMNode();
-	var $suggestionButton = $(domNode).find('.help-block').find('button');
-	$suggestionButton.click( this.handleSuggestionButton );
-   
-  },
-  
-  handleSuggestionButton: function(e){
-    
-	var textArray = [];
-    var text = e.target.innerHTML;
-	var parent = e.target.parentNode;
-	var prev = parent.previousSibling;
-	var elem = prev.firstChild;
-	if(elem.value){
-	  textArray.push(elem.value);
-	}
-	textArray.push(text);
-	elem.value = textArray.join();
-  
-  },
-  
-  componentWillUnmount: function() {
-	
-    var elem = $('#fileupload');
-	//double check this
-	Actions.unbindfileUpload(elem);
-  
-  },
-  
-  handleSubmit: function(e){  
-    
-	e.preventDefault();
-	var userInput = JSON.stringify($(form).serializeObject());
-	
-	var modal = this.refs.modal.getDOMNode(),
-	    form = this.refs.form.getDOMNode();
-	$(modal).find('.modal-body').html('<p>' + $('form').serializeObject() + '</p>');
-	$(modal).modal('show');
-	Actions.setUserProfile(
-	  JSON.stringify($(form).serializeObject())
-	);
-  
-  },
-  
-  render: function(){
-    
-	var data = this.props.data;
-    var userProfile = data.userProfile;
-	
-    return (
-	 
-      React.createElement("div", {className: "user-profile"}, 	  
-	   React.createElement(TopNav, null), 
-		    React.createElement("div", {className: "modal fade", ref: "modal", id: "basicModal", tabindex: "-1", role: "dialog", 
-			    'aria-labelledby': "basicModal", 'aria-hidden': "true"}, 
-				React.createElement("div", {className: "modal-dialog"}, 
-				  React.createElement("div", {className: "modal-content"}, 
-				    React.createElement("div", {className: "modal-header"}, 
-					  React.createElement("button", {type: "button", className: "close", 'data-dismiss': "modal", 'aria-hiddden': "true"}, "x"), 
-	                  React.createElement("h4", {className: "modal-title", id: "myModalLabel"}, "Modal title")
+      },
+
+      getInitialState: function () {
+        return {
+          username: 'user profile'
+        }
+      },
+
+      componentDidMount: function () {
+
+        // Change this to the location of your server-side upload handler:
+        var url = '',
+            elem = $('#fileupload');
+        Actions.fileUpload(elem, url);
+        var domNode = this.getDOMNode();
+        var $suggestionButton = $(domNode).find('.help-block').find('button');
+        $suggestionButton.click(this.handleSuggestionButton);
+
+      },
+
+      handleSuggestionButton: function (e) {
+
+        var textArray = [];
+        var text = e.target.innerHTML;
+        var parent = e.target.parentNode;
+        var prev = parent.previousSibling;
+        var elem = prev.firstChild;
+        if (elem.value) {
+          textArray.push(elem.value);
+        }
+        textArray.push(text);
+        elem.value = textArray.join();
+
+      },
+
+      componentWillUnmount: function () {
+
+        var elem = $('#fileupload');
+        //double check this
+        Actions.unbindfileUpload(elem);
+
+      },
+
+      handleSubmit: function (e) {
+
+        e.preventDefault();
+        var userInput = JSON.stringify($(form).serializeObject());
+
+        var modal = this.refs.modal.getDOMNode(),
+            form = this.refs.form.getDOMNode();
+        $(modal).find('.modal-body').html('<p>' + $('form').serializeObject() +
+            '</p>');
+        $(modal).modal('show');
+        Actions.setUserProfile(
+            JSON.stringify($(form).serializeObject())
+        );
+
+      },
+
+      render: function () {
+
+        var data = this.props.data;
+        var userProfile = data.userProfile;
+
+        return (
+
+            React.createElement("div", {className: "user-profile"}, 
+              React.createElement(TopNav, null), 
+              React.createElement("div", {className: "modal fade", ref: "modal", id: "basicModal", tabindex: "-1", role: "dialog", 
+              "aria-labelledby": "basicModal", "aria-hidden": "true"}, 
+                React.createElement("div", {className: "modal-dialog"}, 
+                  React.createElement("div", {className: "modal-content"}, 
+                    React.createElement("div", {className: "modal-header"}, 
+                      React.createElement("button", {type: "button", className: "close", "data-dismiss": "modal", "aria-hiddden": "true"}, "x"), 
+                      React.createElement("h4", {className: "modal-title", id: "myModalLabel"}, "Modal title")
                     ), 
-                  React.createElement("div", {className: "modal-body"}, 
-                    React.createElement("h3", null, "Modal body")
-                  ), 
-                  React.createElement("div", {className: "modal-footer"}, 
-                    React.createElement("button", {type: "button", className: "btn btn-default", 'data-dismiss': "modal"}, "Close"), 
-           			React.createElement("button", {type: "button", className: "btn btn-primary"}, "Save Changes")
-                  )					
-                )					
-              )					
-            ), 				
-	    React.createElement("div", {className: "container"}, 
-		    
-		  React.createElement("div", {className: "row user-profile-head"}, 
-		   
-		    React.createElement("div", {className: "col-xs-12"}, 
-		      React.createElement("h1", {className: "text-center vertical-align"}, 
-			    
-				"username", 
-				
-			    React.createElement("div", {className: "photo-circle"}, 
-				  React.createElement("div", {className: "inner-circle"}, 
-				    React.createElement("img", {src: "images/camera.png", alt: "camera", title: "camera"})
-				  )
-				)
-			  )
-			)
-		   
-		  ), /*end second row*/
-		  
-		  React.createElement("div", {className: "row user-profile-menu"}, 
-		  
-		    React.createElement("div", {className: "col-xs-12"}, 			
-			  React.createElement("menu", null, 
-			  
-			    React.createElement("menuitem", null, React.createElement("a", {href: "#myAccount"}, "My Account "), "| "), 
-			    React.createElement("menuitem", null, React.createElement("a", {href: "#aboutMe"}, "About Me "), "| "), 
-			    React.createElement("menuitem", null, React.createElement("a", {href: "#social"}, "Social "), "| "), 
-			    React.createElement("menuitem", null, React.createElement("a", {href: "#background"}, "Background "), "| "), 
-			    React.createElement("menuitem", null, React.createElement("a", {href: "#interests"}, "Interests"))
-			  
-			  )
-			
-			)
-			
-		  ), /*end third row*/
-		  
-          React.createElement("form", {ref: "form", role: "form", onSubmit: this.handleSubmit}, 
-		  
-		  
-		  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-		  
-		    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			  
-			  React.createElement("article", null, 
-			  
-			    React.createElement("h3", {className: "underline"}, "My Account"), 
-			    React.createElement("strong", null, "*required"), 
-			    
-				React.createElement("div", {className: "center-block my-account"}, 
-			      
-				  React.createElement("span", null, "username"), 
-			      React.createElement("div", {className: "input-group"}, 
-			    
-				    React.createElement("input", {type: "text", name: "username", className: "form-control", placeholder: "username", required: true}), 
-				   React.createElement("span", {className: "input-group-addon"}, React.createElement("span", {className: "glyphicon glyphicon-ok"}))
-                  ), 
-			
-			      React.createElement("span", null, "Artfactum url"), 
-			  
-			      React.createElement("div", {className: "input-group"}, 
-			    
-				    React.createElement("input", {type: "text", name: "arfactumUrl", className: "form-control", placeholder: "url", required: true}), 
-				     React.createElement("span", {className: "input-group-addon"}, React.createElement("span", {className: "glyphicon glyphicon-ok"}))
-                  ), 
-				
-				  React.createElement("div", {className: "center-block button-wrapper"}, 
-                    React.createElement("div", {className: "btn-group"}, 
-				      React.createElement("button", {type: "button", className: "btn btn-default dropdown-toggle artist", 'data-toggle': "dropdown"}, 
-                        "Artist ", React.createElement("span", {className: "caret"})
-                      ), 
-                      React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
-                        React.createElement("li", null, React.createElement("a", {href: "#"}, "Artist")), 
-                        React.createElement("li", null, React.createElement("a", {href: "#"}, "Art Lover"))
-                      )
-                    )
-				  )
-			    )
-			  )
-			
-			)			
-		  
-		  ), /*end fifth row*/
-		
-	
-    	  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-	        React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			    
-			  React.createElement("h3", {id: "aboutMe", className: "underline"}, "About Me")
-			  		 
-			), 
-           	
-		    
-			React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			  
-			  React.createElement("article", null, 
-			  
-			    React.createElement("span", null, "Living in"), 
-			  
-			    React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {type: "text", name: "livingIn", className: "form-control", placeholder: "country", required: true}), 
-				  React.createElement("span", {className: "input-group-addon"}, React.createElement("span", {className: "glyphicon glyphicon-ok"}))
-			  
-                ), 
-			
-			    React.createElement("span", null, "Spoken languages"), 
-			  
-			    React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {type: "text", name: "spokenLanguages", className: "form-control", placeholder: "url", required: true}), 
-				   React.createElement("span", {className: "input-group-addon"}, React.createElement("span", {className: "glyphicon glyphicon-ok"}))
-			  
-                ), 
-				
-				React.createElement("p", {className: "gray help-block"}, "Suggestions",   
-				  React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
-				  React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
-				)
-                
-			  )
-			
-			)			
-		  
-		  ), /*end seventh row*/
-		
-		  React.createElement("div", {className: "row user-profile-forms center-block social"}, 
-			  
-			React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2 "}, 
-			    
-			  React.createElement("h3", {id: "social", className: "underline"}, "Social")
-			 
-			), 
-			
-		    React.createElement("div", {className: "row center-block"}, 
-			
-			  React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
-			
-			    React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Facebook")
-			
-			  ), 
-          
-		      React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
-			
-			    React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Twitter")
-			
-			  ), 
-			
-			  React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
-			
-			    React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Google+")
-			
-			  )
-			
-		    )/*end sub-row*/
-		  
-		  ), /*end eighth row*/
-		
-		  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-			  
-			React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			    
-			  React.createElement("h3", {id: "background", className: "underline"}, "Artistic Background")
-			 
-			)
-          
-		  ), /*end ninth row*/
-		  
-		  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-		  
-		    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			  
-			  React.createElement("article", null, 
-			  
-			    React.createElement("span", null, "Artistic Disciplines"), 
-			  
-			    React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {name: "artisticDisciplines", type: "text", className: "form-control", placeholder: "country"})
-			  
-                ), 
-				
-				React.createElement("p", {className: "gray help-block"}, "Suggestions",   
-				  React.createElement("button", {type: "button", className: "btn btn-default"}, "Photography"), 
-				  React.createElement("button", {type: "button", className: "btn btn-default"}, "Painting")
-				), 
-			
-			    React.createElement("p", null, "Artistic CV"), 
-			    
-			    React.createElement("div", {className: "input-group"}, 
-			      React.createElement("span", {className: "btn btn-success fileinput-button"}, 
-                    React.createElement("i", {className: "glyphicon glyphicon-plus"}), 
-                    React.createElement("span", null, " Select file..."), 
-                    React.createElement("input", {id: "fileupload", type: "file", name: "files[]", multiple: true})
-                  ), 
-				  React.createElement("span", {id: "files", className: "files"}), 
-				  React.createElement("p", null), 
-                  React.createElement("div", {id: "progress", className: "progress"}, 
-                    React.createElement("div", {className: "progress-bar progress-bar-success"})
-                  ), 
-	              React.createElement("p", null)
-                )
-	
-				  /*<span className="input-group-btn">
-                    <button className="btn btn-default" type="button">Browse</button>
-                  </span>*/
-              
-     			
-			  )
-			
-			)			
-		  
-		  ), /*end tenth row*/
-		
-		  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-			  
-	 	    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			    
-			  React.createElement("h3", {id: "interests", className: "underline"}, 
-				"Personal Interests"
-		      )
-			)
-			  
-		  ), " ", /*end 11th row*/
-		  
-		  React.createElement("div", {className: "row user-profile-forms center-block"}, 
-		  
-		    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
-			  
-			  React.createElement("article", null, 
-			  
-			    React.createElement("span", null, "Favorite art styles"), 
-			  
-			    React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {type: "text", name: "favoriteArtStyles", className: "form-control", placeholder: "username"})
-			    ), 
-				
-				  React.createElement("p", {className: "gray help-block"}, "Suggestions",   
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
-				  ), 
-			
-			    React.createElement("span", null, "Featured interests"), 
-			  
-			    React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {type: "text", name: "featuredInterests", className: "form-control", placeholder: "url"})
-			      
-				), 
-				  React.createElement("p", {className: "gray help-block"}, "Suggestions",   
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
-				  ), 
-				
-				React.createElement("span", null, "Influences"), 
-			  
-				React.createElement("div", {className: "input-group"}, 
-			    
-				  React.createElement("input", {type: "text", name: "influences", className: "form-control", placeholder: "influences"})
-			    ), 
-				  React.createElement("div", {className: "gray help-block"}, "Suggestions",   
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "Surrealism"), 
-				    React.createElement("button", {type: "button", className: "btn btn-default"}, "Cubism")
-				  ), 
-			
-				
-				React.createElement("div", {className: "center-block button-wrapper"}, 
-                  React.createElement("div", {className: "btn-group"}, 
-				    
-					React.createElement("button", {type: "submit", className: "btn btn-active"}, 
-                      "Save"
+                    React.createElement("div", {className: "modal-body"}, 
+                      React.createElement("h3", null, "Modal body")
+                    ), 
+                    React.createElement("div", {className: "modal-footer"}, 
+                      React.createElement("button", {type: "button", className: "btn btn-default", "data-dismiss": "modal"}, "Close"), 
+                      React.createElement("button", {type: "button", className: "btn btn-primary"}, "Save Changes")
                     )
                   )
-				
-				)
-		    
-			  )
-			
-			)			
-		  
-		  ), " "/*end 12th row*/
-		
-		  ), 
-		
-		  React.createElement("div", {className: "row user-profile-bottom"}, 
-		    React.createElement(Footer, null)
-		  )/*end 13th row*/
-		)
-		
-	  )
-		
-	);
-	
-  }
-  
-});
+                )
+              ), 
+              React.createElement("div", {className: "container"}, 
 
+                React.createElement("div", {className: "row user-profile-head"}, 
+
+                  React.createElement("div", {className: "col-xs-12"}, 
+                    React.createElement("h1", {className: "text-center vertical-align"}, 
+
+                    "username", 
+
+                      React.createElement("div", {className: "photo-circle"}, 
+                        React.createElement("div", {className: "inner-circle"}, 
+                          React.createElement("img", {src: "images/camera.png", alt: "camera", title: "camera"})
+                        )
+                      )
+                    )
+                  )
+
+                ), /*end second row*/
+
+                React.createElement("form", {ref: "form", role: "form", onSubmit: this.handleSubmit}, 
+
+                  React.createElement("div", {className: "row user-profile-forms center-block"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement("article", null, 
+
+                        React.createElement(PaddedUnderline, {className: "form-headers", template: React.createElement("b", null, "My Account"), isFocused: "true"}, 
+                        "My Account"
+                        ), 
+                        React.createElement("strong", null, "*required"), 
+
+                        React.createElement("div", {className: "center-block my-account"}, 
+
+                          React.createElement("span", null, "username"), 
+                          React.createElement("div", {className: "input-group"}, 
+
+                            React.createElement("input", {type: "text", name: "username", className: "form-control", placeholder: "username", required: true}), 
+                            React.createElement("span", {className: "input-group-addon"}, 
+                              React.createElement("span", {className: "glyphicon glyphicon-ok"})
+                            )
+                          ), 
+
+                          React.createElement("span", null, "Artfactum url"), 
+
+                          React.createElement("div", {className: "input-group"}, 
+
+                            React.createElement("input", {type: "text", name: "arfactumUrl", className: "form-control", placeholder: "url", required: true}), 
+                            React.createElement("span", {className: "input-group-addon"}, 
+                              React.createElement("span", {className: "glyphicon glyphicon-ok"})
+                            )
+                          ), 
+
+                          React.createElement("div", {className: "center-block button-wrapper"}, 
+                            React.createElement("div", {className: "btn-group"}, 
+                              React.createElement("button", {type: "button", className: "btn btn-default dropdown-toggle artist", "data-toggle": "dropdown"}, 
+                              "Artist", 
+                                React.createElement("span", {className: "caret"})
+                              ), 
+                              React.createElement("ul", {className: "dropdown-menu", role: "menu"}, 
+                                React.createElement("li", null, 
+                                  React.createElement("a", {href: "#"}, "Artist")
+                                ), 
+                                React.createElement("li", null, 
+                                  React.createElement("a", {href: "#"}, "Art Lover")
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+
+                    )
+
+                  ), /*end fifth row*/
+
+
+                  React.createElement("div", {className: "row user-profile-forms aboutme center-block"}, 
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement(PaddedUnderline, {className: "form-headers", template: React.createElement("b", {id: "aboutMe"}, "About Me"), isFocused: "true"}
+                      )
+
+                    ), 
+
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement("article", null, 
+
+                        React.createElement("span", {className: "section"}, "Living in"), 
+
+                        React.createElement("div", {className: "input-group"}, 
+
+                          React.createElement("input", {type: "text", name: "livingIn", className: "form-control", placeholder: "country", required: true}), 
+                          React.createElement("span", {className: "input-group-addon"}, 
+                            React.createElement("span", {className: "glyphicon glyphicon-ok"})
+                          )
+
+                        ), 
+
+                        React.createElement("span", {className: "section"}, "Spoken languages"), 
+
+                        React.createElement("div", {className: "input-group"}, 
+
+                          React.createElement("input", {type: "text", name: "spokenLanguages", className: "form-control", placeholder: "url", required: true}), 
+                          React.createElement("span", {className: "input-group-addon"}, 
+                            React.createElement("span", {className: "glyphicon glyphicon-ok"})
+                          )
+
+                        ), 
+
+                        React.createElement("p", {className: "gray help-block"}, "Suggestions", 
+                          React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
+                          React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
+                        )
+
+                      )
+
+                    )
+
+                  ), /*end seventh row*/
+
+                  React.createElement("div", {className: "row user-profile-forms center-block social"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2 "}, 
+
+                      React.createElement(PaddedUnderline, {id: "social", className: "form-headers", template: React.createElement("b", null, "Social"), isFocused: "true"}
+                      )
+
+                    ), 
+
+                    React.createElement("div", {className: "row center-block all-social"}, 
+
+                      React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
+
+                        React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Facebook")
+
+                      ), 
+
+                      React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
+
+                        React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Twitter")
+
+                      ), 
+
+                      React.createElement("div", {className: "col-xs-12 col-md-4 padding1 social-buttons"}, 
+
+                        React.createElement("span", {className: "btn-lg btn-primary center-block"}, "Google+")
+
+                      )
+
+                    )/*end sub-row*/
+
+                  ), /*end eighth row*/
+
+                  React.createElement("div", {className: "row user-profile-forms center-block"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement(PaddedUnderline, {id: "background", className: "form-headers", template: React.createElement("b", null, "Artistic Background"), isFocused: "true"}
+                      )
+
+                    )
+
+                  ), /*end ninth row*/
+
+                  React.createElement("div", {className: "row user-profile-forms center-block"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement("article", null, 
+
+                        React.createElement("span", null, "Artistic Disciplines"), 
+
+                        React.createElement("div", {className: "input-group"}, 
+
+                          React.createElement("input", {name: "artisticDisciplines", type: "text", className: "form-control", placeholder: "country"})
+
+                        ), 
+
+                        React.createElement("p", {className: "gray help-block"}, "Suggestions", 
+                          React.createElement("button", {type: "button", className: "btn btn-default"}, "Photography"), 
+                          React.createElement("button", {type: "button", className: "btn btn-default"}, "Painting")
+                        ), 
+
+                        React.createElement("p", null, "Artistic CV"), 
+
+                        React.createElement("div", {className: "input-group"}, 
+                          React.createElement("span", {className: "btn btn-success fileinput-button"}, 
+                            React.createElement("i", {className: "glyphicon glyphicon-plus"}), 
+                            React.createElement("span", null, " Select file..."), 
+                            React.createElement("input", {id: "fileupload", type: "file", name: "files[]", multiple: true})
+                          ), 
+                          React.createElement("span", {id: "files", className: "files"}), 
+                          React.createElement("p", null), 
+                          React.createElement("div", {id: "progress", className: "progress"}, 
+                            React.createElement("div", {className: "progress-bar progress-bar-success"})
+                          ), 
+                          React.createElement("p", null)
+                        )
+	
+				  /*<span className="input-group-btn">
+                   <button className="btn btn-default" type="button">Browse</button>
+                   </span>*/
+
+
+                      )
+
+                    )
+
+                  ), /*end tenth row*/
+
+                  React.createElement("div", {className: "row user-profile-forms center-block"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+                      React.createElement(PaddedUnderline, {id: "interests", className: "form-headers", template: React.createElement("b", null, "Personal Interests"), isFocused: "true"}
+                      )
+
+                    )
+
+                  ), " ", /*end 11th row*/
+
+                  React.createElement("div", {className: "row user-profile-forms center-block"}, 
+
+                    React.createElement("div", {className: "col-xs-12 col-md-8 col-md-offset-2"}, 
+
+                      React.createElement("article", null, 
+
+                        React.createElement("div", {className: "section row container"}, 
+                          React.createElement("span", null, "Favorite art styles"), 
+
+                          React.createElement("div", {className: "input-group"}, 
+
+                            React.createElement("input", {type: "text", name: "favoriteArtStyles", className: "form-control", placeholder: "username"})
+                          ), 
+
+                          React.createElement("p", {className: "gray help-block"}, "Suggestions", 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
+                          )
+                        ), 
+                        React.createElement("div", {className: "section row container"}, 
+                          React.createElement("span", null, "Featured interests"), 
+
+                          React.createElement("div", {className: "input-group"}, 
+
+                            React.createElement("input", {type: "text", name: "featuredInterests", className: "form-control", placeholder: "url"})
+
+                          ), 
+                          React.createElement("p", {className: "gray help-block"}, "Suggestions", 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "English"), 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "Spanish")
+                          )
+                        ), 
+                        React.createElement("div", {className: "section row container"}, 
+                          React.createElement("span", null, "Influences"), 
+
+                          React.createElement("div", {className: "input-group"}, 
+
+                            React.createElement("input", {type: "text", name: "influences", className: "form-control", placeholder: "influences"})
+                          ), 
+                          React.createElement("div", {className: "gray help-block"}, "Suggestions", 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "Surrealism"), 
+                            React.createElement("button", {type: "button", className: "btn btn-default"}, "Cubism")
+                          )
+                        ), 
+
+                        React.createElement("div", {className: "center-block button-wrapper"}, 
+                          React.createElement("div", {className: "btn-group"}, 
+
+                            React.createElement("button", {type: "submit", className: "btn btn-active"}, 
+                            "Save"
+                            )
+                          )
+
+                        )
+
+                      )
+
+                    )
+
+                  ), " "/*end 12th row*/
+
+                ), 
+
+                React.createElement("div", {className: "row user-profile-bottom"}, 
+                  React.createElement(Footer, null)
+                )/*end 13th row*/
+              )
+
+            )
+
+            );
+
+      }
+
+    });
 
 
 module.exports = UserProfile;
-},{"../../../styles/color-swatch.css":28,"./../../actions/actions.js":1,"./../TopNav/TopNav.js":14,"./../footer/footer.js":19,"./user-profile.css":24}],26:[function(require,module,exports){
+},{"./../../actions/actions.js":2,"./../PaddedUnderline/PaddedUnderline.js":14,"./../TopNav/TopNav.js":24,"./../footer/footer.js":31,"./user-profile.css":35}],37:[function(require,module,exports){
 'use strict';
 
 /*
  * Dispatchers are simple action dispatchers for stores.
  * Stores handle the related action.
  */
- 
+
 var Flux = require('delorean').Flux;
- 
+
 var store = require('./stores/store.js');
- 
+
 var Dispatcher = Flux.createDispatcher({
   setData: function (data) {
     this.dispatch('incoming-data', data);
+  },
+  setFacebookData: function (data) {
+    this.dispatch('facebook-data', data);
   },
   setUserProfile: function (data) {
     this.dispatch('setUserProfile', data);
@@ -1573,7 +2052,13 @@ var Dispatcher = Flux.createDispatcher({
   fetchUserPhotos: function (data) {
     this.dispatch('fetchUserPhotos', data[0].photos);
   },
-  setCVFile: function( data ){
+  setArtLoverCollections: function (data) {
+    this.dispatch('setArtLoverCollections', data[0].artLoverCollections);
+  },
+  setFeaturedCollections: function (data) {
+    this.dispatch('setFeaturedCollections', data[0].featuredCollections);
+  },
+  setCVFile: function (data) {
     this.dispatch('setCVFile', data);
   },
   getStores: function () {
@@ -1581,117 +2066,218 @@ var Dispatcher = Flux.createDispatcher({
   }
 });
 module.exports = Dispatcher;
-},{"./stores/store.js":27,"delorean":40}],27:[function(require,module,exports){
+},{"./stores/store.js":38,"delorean":51}],38:[function(require,module,exports){
 'use strict';
 
 var Flux = require('delorean').Flux;
 
-
 var Store = Flux.createStore({
-  
   data: {
-  
     signedIn: false,
-    
-	  userProfile: {
-	
-	    username: "username",
-	    artfactumUrl: null,
-	    livingIn: 'country',
-	    spokenLanguages: [],
-	    artisticDisciplines: [],
-	    favoriteArtStyles: [],
-	    featuredInterests: [],
-	    influences: [],
-	    artisticCV: {/*data object*/},
-	    profile: 'artist', //either artist or art lover
-        bornIn: 'country',
-        birthDate: null,
-        socialConnections: {
-	      facebook: false,
-		  twitter: false,
-		  googlePlus: false
-	    },
-	    following: ['artist']
-	  
-	  },
-    
-	//photo model
-	photoAttributes: {
-	
-	  id: null,
-	  photoUrl: null,
-	  title: 'untitled',
-	  ownerName: 'owner',
-	  ownerUrl: null,
-	  description: 'photo description lorem ipsum artsum lorem ip ipsum describe',
-	  dateUploaded: null,
-	  curatedIncrement: 0,
-	  followedIncrement: 0,
-	  viewedIncrement: 0,
-	  isUndiscovered: true,
-	  category: ['Art'],
-	  trendingTags: []
-	
-	},
-	
-	userPhotos: {
-	
-	  photos: [] //all the user's photos
-	
-	},
-	
-	photosByCategory: {
-	
-	  photos: [] //retrieve array of photoAttributes
-	
-	},
-	
-	photosByTrendingTags: {
-	
-	  photos: [] //retrieve array of photoAttributes
-	
-	}
-    
+
+    facebookData: {
+      first_name: null,
+      gender: null,
+      id: null,
+      last_name: null,
+      link: null,
+      locale: null,
+      name: null,
+      timezone: null,
+      updated_time: null,
+      verified: null
+    },
+
+    userProfile: {
+
+      username: "username",
+      artfactumUrl: null,
+      livingIn: 'country',
+      spokenLanguages: [],
+      artisticDisciplines: [],
+      favoriteArtStyles: [],
+      featuredInterests: [],
+      influences: [],
+      artisticCV: {/*data object*/},
+      profile: 'artist', //either artist or art lover
+      bornIn: 'country',
+      birthDate: null,
+      socialConnections: {
+        facebook: false,
+        twitter: false,
+        googlePlus: false
+      },
+      following: ['artist']
+
+    },
+
+    photoAttributes: {
+
+      id: null,
+      photoUrl: null,
+      title: 'untitled',
+      ownerName: 'owner',
+      ownerUrl: null,
+      description: 'photo description lorem ipsum artsum lorem ip ipsum describe',
+      dateUploaded: null,
+      curatedIncrement: 0,
+      followedIncrement: 0,
+      viewedIncrement: 0,
+      isUndiscovered: true,
+      category: ['Art'],
+      trendingTags: []
+
+    },
+
+    userPhotos: {
+      photos: [] //all the user's photos
+    },
+
+    photosByCategory: {
+      photos: [] //retrieve array of photoAttributes
+    },
+
+    photosByTrendingTags: {
+      photos: [] //retrieve array of photoAttributes
+    },
+
+    featuredCollections: [
+      {
+        featuredCollection: {
+          title: "title"
+        }
+      }
+    ],
+
+    artLoverCollections: [
+      {
+        collection: {
+          title: "title"
+        }
+      }
+    ]
+
   },
-  
+
   setData: function (data) {
     this.data.setData = data;
     this.emit('change');
   },
-  
-  setUserProfile: function(data) {  
+
+  setFacebookData: function (data) {
+    this.data.facebookData = data;
+    this.emit('change');
+  },
+
+  setUserProfile: function (data) {
     this.data.userProfile = data;
-	this.emit('change');
+    this.emit('change');
   },
-  
-  fetchUserPhotos: function(data){
-	this.data.userPhotos.photos = data;
-	this.emit('change');
+
+  fetchUserPhotos: function (data) {
+    this.data.userPhotos.photos = data;
+    this.emit('change');
   },
-  
-  setCVFile: function(data) {
-  
+
+  setArtLoverCollections: function (data) {
+    this.data.artLoverCollections = data;
+    this.emit('change');
+  },
+
+  setFeaturedCollections: function (data) {
+    this.data.featuredCollections = data;
+    this.emit('change');
+  },
+
+  setCVFile: function (data) {
+
     this.data.userProfile.artisticCV = data;
-	this.emit('change');
-  
+    this.emit('change');
+
   },
-  
+
   actions: {
     'incoming-data': 'setData',
-	'setUserProfile': 'setUserProfile',
-	'fetchUserPhotos': 'fetchUserPhotos',
-	'setCVFile': 'setCVFile'
+    'facebook-data': 'setFacebookData',
+    'setUserProfile': 'setUserProfile',
+    'fetchUserPhotos': 'fetchUserPhotos',
+    'setFeaturedCollections': 'setFeaturedCollections',
+    'setArtLoverCollections': 'setArtLoverCollections',
+    'setCVFile': 'setCVFile'
   }
-  
+
 });
 
 var store = new Store();
 
 module.exports = store;
-},{"delorean":40}],28:[function(require,module,exports){
-var css = "/*color swatch theme for artfactum signup page*/\r\n\r\n.tomato{\r\n  color:#e56e5c;\r\n}\r\n\r\n.tomato-background{\r\n  background:#e5635c;\r\n  color: white;\r\n}\r\n\r\n.dark-gray{\r\n\r\n  color: #3a3a3a;\r\n\r\n}\r\n\r\n.dark-gray-background{\r\n\r\n  background: #3a3a3a;\r\n  color:white;\r\n  \r\n}\r\n\r\n.chrome{\r\n\r\n  color: #d1ccca;\r\n\r\n}\r\n\r\n.chrome-background{\r\n\r\n  background: #d1ccca;\r\n  color: black;\r\n\r\n}\r\n\r\n.gray{\r\n  color: slategray;\r\n}\r\n"; (require("C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify"))(css); module.exports = css;
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\cssify":29}],29:[function(require,module,exports){
+},{"delorean":51}],39:[function(require,module,exports){
+'use strict';
+
+var Dispatcher = require('./../../dispatcher.js');
+var UserProfile = require('./../../components/user-profile/user-profile.js');
+
+var Router = window.ReactRouter,
+	Route = Router.Route,
+	Routes = Router.Routes,
+	Link = Router.Link,
+	RouteHandler = Router.RouteHandler;
+
+var FacebookLogin = {
+
+	login: function () {
+		FB.login(function () {
+			console.log("login");
+			FacebookLogin.checkLoginState();
+		});
+	},
+
+	checkLoginState: function () {
+		console.log("checkLoginState");
+		FB.getLoginStatus(function (response) {
+			console.log("getLoginStatus");
+			FacebookLogin.statusChangeCallback(response);
+		});
+	},
+
+	statusChangeCallback: function (response) {
+		console.log(response);
+		// The response object is returned with a status field that lets the
+		// app know the current login status of the person.
+		// Full docs on the response object can be found in the documentation
+		// for FB.getLoginStatus().
+		if (response.status === 'connected') {
+			// Logged into your app and Facebook.
+			console.log("connected");
+			FB.api('/me', function (response) {
+				Dispatcher.setFacebookData(response);
+				console.log("connected response : " + response);
+				//route back to user-profile page
+
+			});
+
+
+		}
+		else if (response.status === 'not_authorized') {
+			// The person is logged into Facebook, but not your app.
+			document.getElementById('status').innerHTML = 'Please log ' +
+				'into this app.';
+		}
+		else {
+			// The person is not logged into Facebook, so we're not sure if
+			// they are logged into this app or not.
+			document.getElementById('status').innerHTML = 'Please log ' +
+				'into Facebook.';
+		}
+	},
+
+	actions: {
+		'facebook-login': 'login'
+	}
+};
+
+module.exports = FacebookLogin;
+},{"./../../components/user-profile/user-profile.js":36,"./../../dispatcher.js":37}],40:[function(require,module,exports){
 module.exports = function (css, customDocument) {
   var doc = customDocument || document;
   if (doc.createStyleSheet) {
@@ -1730,13 +2316,13 @@ module.exports.byUrl = function(url) {
   }
 };
 
-},{}],30:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 var Promise = require("./promise/promise").Promise;
 var polyfill = require("./promise/polyfill").polyfill;
 exports.Promise = Promise;
 exports.polyfill = polyfill;
-},{"./promise/polyfill":34,"./promise/promise":35}],31:[function(require,module,exports){
+},{"./promise/polyfill":45,"./promise/promise":46}],42:[function(require,module,exports){
 "use strict";
 /* global toString */
 
@@ -1830,7 +2416,7 @@ function all(promises) {
 }
 
 exports.all = all;
-},{"./utils":39}],32:[function(require,module,exports){
+},{"./utils":50}],43:[function(require,module,exports){
 (function (process,global){
 "use strict";
 var browserGlobal = (typeof window !== 'undefined') ? window : {};
@@ -1894,7 +2480,7 @@ function asap(callback, arg) {
 
 exports.asap = asap;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":43}],33:[function(require,module,exports){
+},{"_process":54}],44:[function(require,module,exports){
 "use strict";
 var config = {
   instrument: false
@@ -1910,7 +2496,7 @@ function configure(name, value) {
 
 exports.config = config;
 exports.configure = configure;
-},{}],34:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function (global){
 "use strict";
 /*global self*/
@@ -1951,7 +2537,7 @@ function polyfill() {
 
 exports.polyfill = polyfill;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./promise":35,"./utils":39}],35:[function(require,module,exports){
+},{"./promise":46,"./utils":50}],46:[function(require,module,exports){
 "use strict";
 var config = require("./config").config;
 var configure = require("./config").configure;
@@ -2163,7 +2749,7 @@ function publishRejection(promise) {
 }
 
 exports.Promise = Promise;
-},{"./all":31,"./asap":32,"./config":33,"./race":36,"./reject":37,"./resolve":38,"./utils":39}],36:[function(require,module,exports){
+},{"./all":42,"./asap":43,"./config":44,"./race":47,"./reject":48,"./resolve":49,"./utils":50}],47:[function(require,module,exports){
 "use strict";
 /* global toString */
 var isArray = require("./utils").isArray;
@@ -2253,7 +2839,7 @@ function race(promises) {
 }
 
 exports.race = race;
-},{"./utils":39}],37:[function(require,module,exports){
+},{"./utils":50}],48:[function(require,module,exports){
 "use strict";
 /**
   `RSVP.reject` returns a promise that will become rejected with the passed
@@ -2301,7 +2887,7 @@ function reject(reason) {
 }
 
 exports.reject = reject;
-},{}],38:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 function resolve(value) {
   /*jshint validthis:true */
@@ -2317,7 +2903,7 @@ function resolve(value) {
 }
 
 exports.resolve = resolve;
-},{}],39:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 function objectOrFunction(x) {
   return isFunction(x) || (typeof x === "object" && x !== null);
@@ -2340,7 +2926,7 @@ exports.objectOrFunction = objectOrFunction;
 exports.isFunction = isFunction;
 exports.isArray = isArray;
 exports.now = now;
-},{}],40:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (DeLorean) {
   'use strict';
 
@@ -2980,7 +3566,7 @@ exports.now = now;
 
 })({});
 
-},{"./requirements":41}],41:[function(require,module,exports){
+},{"./requirements":52}],52:[function(require,module,exports){
 // ## Dependency injection file.
 
 // You can change dependencies using `DeLorean.Flux.define`. There are
@@ -3004,7 +3590,7 @@ if (typeof DeLorean !== 'undefined') {
   }
 }
 
-},{"es6-promise":30,"events":42}],42:[function(require,module,exports){
+},{"es6-promise":41,"events":53}],53:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3307,73 +3893,43 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],43:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
+var queue = [];
+var draining = false;
 
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canMutationObserver = typeof window !== 'undefined'
-    && window.MutationObserver;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
+function drainQueue() {
+    if (draining) {
+        return;
     }
-
-    var queue = [];
-
-    if (canMutationObserver) {
-        var hiddenDiv = document.createElement("div");
-        var observer = new MutationObserver(function () {
-            var queueList = queue.slice();
-            queue.length = 0;
-            queueList.forEach(function (fn) {
-                fn();
-            });
-        });
-
-        observer.observe(hiddenDiv, { attributes: true });
-
-        return function nextTick(fn) {
-            if (!queue.length) {
-                hiddenDiv.setAttribute('yes', 'no');
-            }
-            queue.push(fn);
-        };
+    draining = true;
+    var currentQueue;
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        var i = -1;
+        while (++i < len) {
+            currentQueue[i]();
+        }
+        len = queue.length;
     }
-
-    if (canPost) {
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
+    draining = false;
+}
+process.nextTick = function (fun) {
+    queue.push(fun);
+    if (!draining) {
+        setTimeout(drainQueue, 0);
     }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
+};
 
 process.title = 'browser';
 process.browser = true;
 process.env = {};
 process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
 
 function noop() {}
 
@@ -3394,8 +3950,9 @@ process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
+process.umask = function() { return 0; };
 
-},{}],44:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 /*!
  * imagesLoaded v3.1.8
  * JavaScript is all like "You images are done yet or what?"
@@ -3732,9 +4289,9 @@ function makeArray( obj ) {
 
 });
 
-},{"eventie":45,"wolfy87-eventemitter":46}],45:[function(require,module,exports){
+},{"eventie":56,"wolfy87-eventemitter":57}],56:[function(require,module,exports){
 /*!
- * eventie v1.0.5
+ * eventie v1.0.6
  * event binding helper
  *   eventie.bind( elem, 'click', myFn )
  *   eventie.unbind( elem, 'click', myFn )
@@ -3814,9 +4371,9 @@ if ( typeof define === 'function' && define.amd ) {
   window.eventie = eventie;
 }
 
-})( this );
+})( window );
 
-},{}],46:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 /*!
  * EventEmitter v4.2.11 - git.io/ee
  * Unlicense - http://unlicense.org/
@@ -4290,9 +4847,9 @@ if ( typeof define === 'function' && define.amd ) {
     }
 }.call(this));
 
-},{}],47:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 /*!
- * Masonry v3.2.1
+ * Masonry v3.2.2
  * Cascading grid layout library
  * http://masonry.desandro.com
  * MIT License
@@ -4487,7 +5044,8 @@ if ( typeof define === 'function' && define.amd ) {
       'get-size/get-size'
     ],
     masonryDefinition );
-} else if (typeof exports === 'object') {
+} else if ( typeof exports === 'object' ) {
+  // CommonJS
   module.exports = masonryDefinition(
     require('outlayer'),
     require('get-size')
@@ -4502,7 +5060,7 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{"get-size":48,"outlayer":56}],48:[function(require,module,exports){
+},{"get-size":59,"outlayer":67}],59:[function(require,module,exports){
 /*!
  * getSize v1.2.2
  * measure size of elements
@@ -4754,7 +5312,7 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{"desandro-get-style-property":49}],49:[function(require,module,exports){
+},{"desandro-get-style-property":60}],60:[function(require,module,exports){
 /*!
  * getStyleProperty v1.0.4
  * original by kangax
@@ -4811,7 +5369,7 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{}],50:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 /**
  * Outlayer Item
  */
@@ -5343,9 +5901,9 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{"desandro-get-style-property":51,"get-size":48,"wolfy87-eventemitter":55}],51:[function(require,module,exports){
-module.exports=require(49)
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\masonry-layout\\node_modules\\get-size\\node_modules\\desandro-get-style-property\\get-style-property.js":49}],52:[function(require,module,exports){
+},{"desandro-get-style-property":62,"get-size":59,"wolfy87-eventemitter":66}],62:[function(require,module,exports){
+arguments[4][60][0].apply(exports,arguments)
+},{"dup":60}],63:[function(require,module,exports){
 /**
  * matchesSelector v1.0.2
  * matchesSelector( element, '.selector' )
@@ -5450,7 +6008,7 @@ module.exports=require(49)
 
 })( Element.prototype );
 
-},{}],53:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /*!
  * docReady v1.0.3
  * Cross browser DOMContentLoaded event emitter
@@ -5524,11 +6082,11 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{"eventie":54}],54:[function(require,module,exports){
-module.exports=require(45)
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\imagesloaded\\node_modules\\eventie\\eventie.js":45}],55:[function(require,module,exports){
-module.exports=require(46)
-},{"C:\\Users\\Justin\\documents\\github\\af\\node_modules\\imagesloaded\\node_modules\\wolfy87-eventemitter\\EventEmitter.js":46}],56:[function(require,module,exports){
+},{"eventie":65}],65:[function(require,module,exports){
+arguments[4][56][0].apply(exports,arguments)
+},{"dup":56}],66:[function(require,module,exports){
+arguments[4][57][0].apply(exports,arguments)
+},{"dup":57}],67:[function(require,module,exports){
 /*!
  * Outlayer v1.3.0
  * the brains and guts of a layout library
@@ -6550,4 +7108,4 @@ if ( typeof define === 'function' && define.amd ) {
 
 })( window );
 
-},{"./item":50,"desandro-matches-selector":52,"doc-ready":53,"eventie":54,"get-size":48,"wolfy87-eventemitter":55}]},{},[21]);
+},{"./item":61,"desandro-matches-selector":63,"doc-ready":64,"eventie":65,"get-size":59,"wolfy87-eventemitter":66}]},{},[32]);
